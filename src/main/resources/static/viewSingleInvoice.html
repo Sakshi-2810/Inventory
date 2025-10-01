@@ -89,6 +89,30 @@
             font-size: 0.95rem;
             transition: background 0.2s ease, box-shadow 0.2s ease;
           }
+        .date-input {
+          border: none;
+          border-bottom: 2px solid #007bff;
+          background: transparent;
+          font-size: 16px;
+          padding: 4px 6px;
+          color: #333;
+          border-radius: 4px;
+          transition: border-color 0.2s;
+        }
+
+        .date-input:focus {
+          outline: none;
+          border-color: #0056b3;
+        }
+        .small-date-input {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  padding: 4px 8px;
+  width: auto;           /* shrink to fit content */
+  max-width: 150px;      /* optional limit */
+}
+
 
         button:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
     body { font-family: var(--font-main); background: var(--bg); margin: 0; min-height: 100vh; padding: 0; }
@@ -171,8 +195,9 @@
     <h2>Invoice #<span id="invoiceId"></span></h2>
   </div>
 
-  <div class="subtitle"><span id="invoiceDate"></span></div>
-
+  <div class="subtitle">
+   <input type="date" id="invoiceDate" class="small-date-input">
+</div>
   <div>
     <label>Party Name</label>
     <input id="partyName" type="text" readonly>
@@ -237,7 +262,16 @@
 
 <script>
   let currentBtn = null;
+function toInputDateFormat(ddmmyyyy) {
+  const [dd, mm, yyyy] = ddmmyyyy.split('-');
+  return `${yyyy}-${mm}-${dd}`;
+}
 
+// Convert back to dd-mm-yyyy for display elsewhere if needed
+function toDisplayFormat(yyyymmdd) {
+  const [yyyy, mm, dd] = yyyymmdd.split('-');
+  return `${dd}-${mm}-${yyyy}`;
+}
 // Step 1: Open modal on button click
 function promptGST(btn) {
   currentBtn = btn;
@@ -280,7 +314,7 @@ function confirmGST() {
       invoiceData = (await res.json()).data;
 
       document.getElementById('invoiceId').textContent = invoiceData.invoiceId;
-      document.getElementById('invoiceDate').textContent = invoiceData.date ? `Date: ${invoiceData.date}` : '';
+      document.getElementById('invoiceDate').value  = toInputDateFormat(invoiceData.date ? `${invoiceData.date}` : '');
       invoiceFields.partyName.value = invoiceData.partyName;
       invoiceFields.transactionType.value = invoiceData.transactionType;
       invoiceFields.totalCost.value = invoiceData.totalCost || 0;
@@ -327,7 +361,8 @@ function confirmGST() {
       stockBills,
       totalCost: Number(invoiceFields.totalCost.value || 0),
       additionalDiscount: Number(invoiceFields.additionalDiscount.value || 0),
-      paidAmount: Number(invoiceFields.paidAmount.value || 0)
+      paidAmount: Number(invoiceFields.paidAmount.value || 0),
+      date: toDisplayFormat(document.getElementById("invoiceDate").value)
     };
 
     try {

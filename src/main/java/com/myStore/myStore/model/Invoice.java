@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -18,7 +19,7 @@ public class Invoice {
     private Integer invoiceId;
     @NotBlank
     private String partyName;
-    private List<StockBill> stockBills;
+    private List<StockBill> stockBills = new ArrayList<>();
     private String date;
     private Integer totalCost;
     @NotBlank

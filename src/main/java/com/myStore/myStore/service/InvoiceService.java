@@ -41,8 +41,6 @@ public class InvoiceService {
         if (existingInvoice == null) {
             invoice.setInvoiceId(generateNewInvoiceId());
             invoice.setDate(DateUtils.getCurrentFormattedDate());
-        } else {
-            invoice.setDate(existingInvoice.getDate());
         }
 
         Integer totalCost = calculateTotalCost(invoice.getStockBills());
@@ -100,7 +98,7 @@ public class InvoiceService {
         Party party = partyRepository.findByName(invoice.getPartyName());
 
         htmlContent = htmlContent.replace("{{partyAddress}}", party.getAddress() == null ? "" : party.getAddress());
-        htmlContent = htmlContent.replace("{{partyPhone}}", party.getPhoneNumber());
+        htmlContent = htmlContent.replace("{{partyPhone}}", party.getPhoneNumber() == null ? "" : party.getPhoneNumber());
         htmlContent = htmlContent.replace("{{partyGSTIN}}", party.getGstin() == null ? "" : party.getGstin());
         htmlContent = htmlContent.replace("{{Total}}", String.valueOf(invoice.getTotalCost()));
 
@@ -133,5 +131,9 @@ public class InvoiceService {
         }
         invoiceRepository.deleteById(invoiceId);
         return new Response(invoiceId, "Invoice deleted successfully");
+    }
+
+    public Response getAllInvoices() {
+        return new Response(invoiceRepository.findAll(), "All invoices fetched successfully");
     }
 }

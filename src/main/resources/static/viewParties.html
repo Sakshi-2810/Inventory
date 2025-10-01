@@ -8,6 +8,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
+        .spinner {
+  margin-left: 5px;
+  font-size: 14px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
         /* Notification banner styles */
 .notification {
   position: fixed;
@@ -400,9 +411,17 @@ let partyList = [];
             <td contenteditable="false" class="${p.totalDue >= 0 ? 'green' : 'red'}">${p.totalDue || 0}</td>
             <td>
                 <button class="btn btn-primary" onclick="viewInvoices('${p.name.replace(/'/g,"\\'")}')">View Invoices</button>
-                <button class="btn btn-success save-btn" style="display:none;"  data-id="${p.partyId}" onclick="saveRow(this)">Save</button>
+                <button class="btn btn-success save-btn" style="display:none;"  
+                        data-id="${p.partyId}" onclick="saveRow(this)">
+                <span class="btn-text">Save</span>
+                <span class="spinner" style="display:none;">⏳</span>
+                </button>
                 ${p.totalDue === 0 
-                ? `<button class="btn btn-danger" onclick="deleteRow(this)" data-id="${p.partyId}" data-due="${p.totalDue}">Delete</button>` 
+                ? `<button class="btn btn-danger" onclick="deleteRow(this)" 
+                            data-id="${p.partyId}" data-due="${p.totalDue}">
+                    <span class="btn-text">Delete</span>
+                    <span class="spinner" style="display:none;">⏳</span>
+                    </button>` 
                 : ''}
             </td>
             </tr>
@@ -512,7 +531,21 @@ let partyList = [];
   document.querySelector('#backdrop').addEventListener('click', (e) => {
     if (e.target.id === 'backdrop') closeModal();
   });
+function showSpinner(btn) {
+  const text = btn.querySelector('.btn-text');
+  const spinner = btn.querySelector('.spinner');
 
+  text.style.display = 'none';          // hide button text
+  spinner.style.display = 'inline-block'; // show spinner
+}
+
+function hideSpinner(btn) {
+  const text = btn.querySelector('.btn-text');
+  const spinner = btn.querySelector('.spinner');
+
+  spinner.style.display = 'none';       // hide spinner
+  text.style.display = 'inline';        // show button text
+}
   function openAddParty() {
     showModal(`
       <h3>Add Party</h3>
@@ -525,12 +558,17 @@ let partyList = [];
         </div>
         <div class="actions" style="margin-top:15px; display:flex; gap:10px;">
           <button type="button" class="btn ghost" onclick="closeModal()">Cancel</button>
-          <button class="btn primary">Save</button>
+          <button class="btn primary" id="saveBtn">
+             <span class="btn-text">Save</span>
+            <span class="spinner" style="display:none;">⏳</span>
+          </button>
         </div>
       </form>
     `);
 
     document.getElementById('partyForm').addEventListener('submit', async e => {
+        const saveBtn = document.getElementById('saveBtn');
+        showSpinner(saveBtn);
       e.preventDefault();
       const f = Object.fromEntries(new FormData(e.target));
 
@@ -555,12 +593,16 @@ let partyList = [];
         }
 
         const saved = await res.json();
-        showNotification('Party saved with ID ' + saved.data, 'success');
+        
         await loadParties();
         closeModal();
+        showNotification('Party saved with ID ' + saved.data, 'success');
+
       } catch (err) {
         console.error('Save failed', err);
         showNotification('Failed to save party: ' + err.message, 'error');
+      } finally {
+        hideSpinner(saveBtn);
       }
     });
   }
@@ -619,7 +661,12 @@ async function saveRow(btn) {
   const row = btn.closest("tr");
   const cells = row.querySelectorAll("td[contenteditable='true']");
   const partyId = btn.dataset.id ? parseInt(btn.dataset.id) : null;
+  const btnText = btn.querySelector(".btn-text");
+  const spinner = btn.querySelector(".spinner");
 
+  // show loader
+  btnText.style.display = "none";
+  spinner.style.display = "inline-block";
   const updatedParty = {
     partyId: partyId, 
     name: cells[0].innerText.trim(),
@@ -647,6 +694,10 @@ async function saveRow(btn) {
   } catch (err) {
     console.error(err);
     showNotification('Error saving party', 'error');
+  } finally {
+    // restore button
+    btnText.style.display = "inline";
+    spinner.style.display = "none";
   }
 }
 
@@ -663,7 +714,12 @@ async function deleteRow(btn) {
   if(dueAmount != 0) {
     showNotification("Settle the account first to delete this party", 'error')
   }
+const btnText = btn.querySelector(".btn-text");
+  const spinner = btn.querySelector(".spinner");
 
+  // Show spinner, hide text
+  btnText.style.display = "none";
+  spinner.style.display = "inline-block";
   if (!confirm(`Are you sure you want to delete ${row.cells[0].innerText}?`)) return;
 
   try {
@@ -681,6 +737,10 @@ async function deleteRow(btn) {
   } catch (err) {
     console.error(err);
     showNotification('Error deleting party', 'error');
+  }finally {
+    // Restore button text
+    btnText.style.display = "inline";
+    spinner.style.display = "none";
   }
 }
 // Show notification

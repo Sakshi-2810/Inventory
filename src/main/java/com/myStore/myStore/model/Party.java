@@ -14,8 +14,8 @@ public class Party {
     private Integer partyId;
     @Indexed(unique = true)
     private String name;
-    private String phoneNumber;
-    private String address;
+    private String phoneNumber="";
+    private String address="";
     private String gstin = "";
     private Integer amountAdded = 0;
 }

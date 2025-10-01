@@ -27,6 +27,11 @@ public class InvoiceController {
     @Autowired
     public ModelMapper modelMapper;
 
+    @GetMapping(produces = "application/json", value = "/invoices" )
+    public ResponseEntity<Response> getAllInvoices() {
+        return ResponseEntity.ok(invoiceService.getAllInvoices());
+    }
+
     @PostMapping(value = "/generateInvoice", produces = "application/json")
     public ResponseEntity<Response> saveInvoice(@RequestBody @Valid InvoiceDto invoice) {
         return ResponseEntity.ok(invoiceService.saveInvoice(modelMapper.map(invoice, Invoice.class)));

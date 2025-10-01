@@ -178,14 +178,18 @@ input.inline-edit:focus { border-color: var(--primary); outline: none; }
 <div id="addStockModal">
     <div class="modal-content">
         <h3>Add New Stock</h3>
-        <label for="newStockName">Stock Name</label>
-        <input id="newStockName" type="text">
+       <label for="newStockName">Stock Name</label>
+        <input id="newStockName" type="text" required placeholder="Enter stock name">
+
         <label for="newUnit">Unit</label>
-        <input id="newUnit" type="text">
+        <input id="newUnit" type="text" required placeholder="Enter unit">
+
         <label for="newPrice">Price</label>
-        <input id="newPrice" type="number" step="0.01">
+        <input id="newPrice" type="number" step="1" min="0" required placeholder="Enter price">
+
         <label for="newGst">GST (%)</label>
-        <input id="newGst" type="number" step="0.01">
+        <input id="newGst" type="number" step="1" min="0" max="100" required placeholder="Enter GST %">
+
         <div class="modal-actions">
             <button class="btn btn-back" onclick="closeAddModal()">Cancel</button>
             <button class="btn btn-primary" onclick="saveNewStock()">Save</button>
@@ -228,8 +232,15 @@ async function loadStocks() {
                 <td><input class="stock-input" type="number" step="1" value="${stock.price}" data-field="price"></td>
                 <td><input class="stock-input" type="number" step="1" value="${stock.gst}" data-field="gst"></td>
                 <td>
-                    <button class="btn btn-success save-btn" style="display:none;">Save</button>
-                    <button class="btn btn-danger" onclick="deleteStock('${stock.itemId}')">Delete</button>
+                    <button class="btn btn-success save-btn" style="display:none;">
+                    <span class="btn-text">Save</span>
+                    <span class="spinner" style="display:none;">⏳</span>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="deleteStock(this,'${stock.itemId}')">
+                    <span class="btn-text">Delete</span>
+                    <span class="spinner" style="display:none;">⏳</span>
+                    </button>
                     <span class="saved-feedback">Saved</span>
                 </td>
             `;
@@ -245,6 +256,7 @@ async function loadStocks() {
 
             // Save button click handler
             saveBtn.addEventListener('click', async () => {
+
                 const updatedStock = {
                     itemId: stock.itemId,  // must be included
                     itemName: stock.itemName,
@@ -252,8 +264,12 @@ async function loadStocks() {
                     price: parseFloat(tr.querySelector('input[data-field="price"]').value),
                     gst: parseFloat(tr.querySelector('input[data-field="gst"]').value)
                 };
+                const spinner = saveBtn.querySelector('.spinner');
+                const text = saveBtn.querySelector('.btn-text');
 
                 try {
+                    spinner.style.display = 'inline-block';
+                    text.style.display = 'none';
                     const response = await fetch(`/stock/update`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
@@ -275,6 +291,9 @@ async function loadStocks() {
                 } catch (e) {
                     console.error("Error updating stock:", e);
                     showNotification("Error updating stock", 'error');
+                } finally {
+                    spinner.style.display = 'none';
+                    text.style.display = 'inline';
                 }
             });
 
@@ -290,24 +309,39 @@ async function saveNewStock(){
     const unit=document.getElementById('newUnit').value.trim();
     const price=parseFloat(document.getElementById('newPrice').value);
     const gst=parseFloat(document.getElementById('newGst').value);
-    if(!name){ showNotification('Stock name required', 'error'); return; }
+    if(!name || !unit || !price || !gst){ showNotification('Fill all details', 'error'); return; }
     try{
-        await fetch('/stock/add',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ itemName:name, unit, price, gst })
+        const response = await fetch('/stock/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemName: name, unit, price, gst })
         });
+
+        if (!response.ok) {
+            throw new Error((await response.json).message || "Error saving details");
+        }
         closeAddModal();
         loadStocks();
-    }catch(err){ console.error(err); }
+    }catch(err){ 
+        console.error(err);
+        showNotification(err.message, 'error')
+     }
 }
 
-async function deleteStock(name){
+async function deleteStock(btn, name){
+    const spinner = btn.querySelector('.spinner');
+    const text = btn.querySelector('.btn-text');
+
+    spinner.style.display = 'inline-block';
+    text.style.display = 'none';
     if(!confirm(`Delete stock ${name}?`)) return;
     try{
         await fetch(`/stock/delete?stockId=${encodeURIComponent(name)}`,{method:'DELETE'});
         loadStocks();
-    }catch(e){ console.error(e); }
+    }catch(e){ console.error(e); } finally{
+         spinner.style.display = 'none';
+    if(text) text.style.display = 'inline';
+    }
 }
 
 loadStocks();

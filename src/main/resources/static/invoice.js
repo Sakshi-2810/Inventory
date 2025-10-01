@@ -140,7 +140,7 @@ document.getElementById('invoiceForm').addEventListener('submit', async e => {
   const tbody = document.querySelector('#stockTable tbody');
   const rows = Array.from(tbody.querySelectorAll('tr'));
 
-const stockBills = rows.map(row => {
+  const stockBills = rows.map(row => {
   const stockName = row.querySelector('.stockInput').value.trim();
   const qty = Number(row.querySelector('.qtyInput').value || 0);
   const unit = row.querySelector('.unitInput').value.trim();
@@ -157,6 +157,10 @@ const invoice = {
   additionalDiscount: Number(fd.get('additionalDiscount') || 0),
   paidAmount: Number(fd.get('paidAmount') || 0)
 };
+if(!invoice.partyName) {
+  showNotification("Enter Party Name", 'error');
+  return;
+}
 const btn = document.getElementById('generateBtn');
     const spinner = btn.querySelector('.spinner');
     const text = btn.querySelector('.btn-text');

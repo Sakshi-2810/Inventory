@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoices List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9fafb;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2563eb;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: #334155;
+    }
+    tr:hover {
+      background: #f9f9f9;
+    }
+    .btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-view {
+      background: #2563eb;
+      color: #fff;
+    }
+    .btn-view:hover {
+      background: #1d4ed8;
+    }
+    .center {
+      text-align: center;
+      padding: 20px;
+    }
+    th.asc::after { content: " ▲"; }
+    th.desc::after { content: " ▼"; }
+
+  </style>
+</head>
+<body>
+    
+   <div style="margin-bottom:12px;">
+        <button class="btn btn-home" onclick="goHome()">🏠 Home</button>
+        <button class="btn btn-primary" id="btnInvoice">➕ Add New Invoice</button>
+    </div>
+  <h1>Invoices</h1>
+    <div class="search-bar" style="margin-bottom:18px;">
+        <input type="text" id="searchInput" placeholder="Search Invoice..." style="
+        font-size:16px;
+        padding:10px 16px;
+        border-radius:8px;
+        border:1px solid #dee0e3;
+        min-width: 260px;
+        box-shadow: 0 2px 4px rgba(34,34,34,0.02);
+        outline: none;
+    ">
+ <table id="invoiceTable">
+  <thead>
+    <tr>
+      <th data-column="invoiceId">Invoice ID</th>
+      <th data-column="partyName">Party</th>
+      <th data-column="date">Date</th>
+      <th data-column="totalCost">Total</th>
+      <th data-column="transactionType">Transaction Type</th>
+      <th data-column="paidAmount">Paid Amount</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td colspan="7" class="center">Loading...</td></tr>
+  </tbody>
+</table>
+
+<script>
+const table = document.getElementById('invoiceTable');
+const tbody = table.querySelector('tbody');
+let invoices = []; // Fill this with your fetched invoice data
+
+
+
+function goHome() { window.location.href='/index.html'; }
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const trs = document.querySelectorAll('#invoiceTable tbody tr');
+        trs.forEach(tr => {
+            const text = tr.textContent.toLowerCase();
+            tr.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+   
+   async function loadInvoices() {
+  const table = document.querySelector("#invoiceTable");
+  const tbody = table.querySelector("tbody");
+
+  try {
+    const res = await fetch("/invoices");
+    const json = await res.json();
+    let invoices = json.data || [];
+
+    tbody.innerHTML = "";
+
+    if (!invoices.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="center">No invoices found.</td></tr>`;
+      return;
+    }
+
+    // Initial sort by invoiceId descending
+    invoices.sort((a, b) => b.invoiceId - a.invoiceId);
+
+    function renderTable(data) {
+      tbody.innerHTML = "";
+      data.forEach(inv => {
+        const tr = document.createElement("tr");
+        if (inv.transactionType === 'SELL') {
+          tr.style.backgroundColor = inv.dueAmount > 0 ? '#d4edda' : '#f0f0f0';
+          tr.style.color = inv.dueAmount > 0 ? '#155724' : '#555';
+        } else if (inv.transactionType === 'BUY') {
+          tr.style.backgroundColor = inv.dueAmount > 0 ? '#f8d7da' : '#f0f0f0';
+          tr.style.color = inv.dueAmount > 0 ? '#721c24' : '#555';
+        } else if (inv.transactionType === 'CASH') {
+          tr.style.backgroundColor = '#d1ecf1';
+          tr.style.color = '#0c5460';
+        } else {
+          tr.style.backgroundColor = '#f0f0f0';
+          tr.style.color = '#555';
+        }
+        tr.innerHTML = `
+          <td>${inv.invoiceId}</td>
+          <td>${inv.partyName || "-"}</td>
+          <td>${inv.date || "-"}</td>
+          <td>₹${inv.totalCost || 0}</td>
+          <td>${inv.transactionType}</td>
+          <td>${inv.paidAmount}</td>
+          <td><button class="btn btn-view" onclick="viewInvoice(${inv.invoiceId})">View</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    renderTable(invoices);
+
+    // Add sorting on header click
+    table.querySelectorAll("th").forEach((th, index) => {
+      th.style.cursor = "pointer";
+      th.addEventListener("click", () => {
+        const asc = !th.classList.contains("asc");
+        const keyMap = ["invoiceId", "partyName", "date", "totalCost", "transactionType", "paidAmount"];
+        const key = keyMap[index];
+        if (!key) return;
+
+        invoices.sort((a, b) => {
+          let valA = a[key], valB = b[key];
+          if (key === "date") { valA = new Date(toInputDateFormat(valA)); valB = new Date(toInputDateFormat(valB)); }
+          if (typeof valA === "string") valA = valA.toLowerCase();
+          if (typeof valB === "string") valB = valB.toLowerCase();
+          return (valA > valB ? 1 : -1) * (asc ? 1 : -1);
+        });
+
+        table.querySelectorAll("th").forEach(th => th.classList.remove("asc","desc"));
+        th.classList.add(asc ? "asc" : "desc");
+        renderTable(invoices);
+      });
+    });
+
+  } catch (err) {
+    console.error("Error loading invoices", err);
+    tbody.innerHTML = `<tr><td colspan="7" class="center">Error loading invoices.</td></tr>`;
+  }
+}
+document.getElementById('btnInvoice').addEventListener('click', () => {
+      window.location.href = 'invoice.html';
+    });
+
+function toInputDateFormat(ddmmyyyy) {
+  const [dd, mm, yyyy] = ddmmyyyy.split('-');
+  return `${yyyy}-${mm}-${dd}`;
+}
+    function viewInvoice(id) {
+      window.location.href = `viewSingleInvoice.html?id=${id}`;
+    }
+
+    // Load invoices on page ready
+    document.addEventListener("DOMContentLoaded", loadInvoices);
+  </script>
+</body>
+</html>
