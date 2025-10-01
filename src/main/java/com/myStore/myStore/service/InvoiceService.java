@@ -102,8 +102,8 @@ public class InvoiceService {
         htmlContent = htmlContent.replace("{{partyGSTIN}}", party.getGstin() == null ? "" : party.getGstin());
         htmlContent = htmlContent.replace("{{Total}}", String.valueOf(invoice.getTotalCost()));
 
-        Integer subTotal = invoice.getStockBills().stream().map(stockBill -> stockBill.getQuantity() * stockBill.getPrice()).reduce(0, Integer::sum);
-        htmlContent = htmlContent.replace("{{subtotal}}", subTotal.toString());
+        double subTotal = invoice.getStockBills().stream().map(stockBill -> stockBill.getQuantity() * stockBill.getPrice()).reduce(0.0, Double::sum);
+        htmlContent = htmlContent.replace("{{subtotal}}", String.valueOf(subTotal));
         htmlContent = htmlContent.replace("{{Tax}}", String.valueOf((invoice.getTotalCost() + invoice.getAdditionalDiscount() - subTotal) / 2.0));
 
         htmlContent = htmlContent.replace("{{Discount}}", String.valueOf(invoice.getAdditionalDiscount()));

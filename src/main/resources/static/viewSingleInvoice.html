@@ -509,7 +509,7 @@ async function deleteCurrentInvoice(button) {
       showNotification(`Invoice #${invoiceId} deleted successfully!`, "success");
       // redirect to invoice list after delete
       setTimeout(() => {
-        window.location.href = "/viewParties.html";
+        window.location.href = "/invoicesList.html";
       }, 1500);
     } else {
       showNotification(data.message || "Failed to delete invoice", "error");

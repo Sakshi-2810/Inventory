@@ -14,9 +14,9 @@ public class StockBill {
     @NotBlank
     private String itemName;
     @NotNull
-    private Integer quantity;
+    private double quantity;
     private double gst = 0.0;
     @NotNull
-    private Integer price;
+    private double price;
     private String unit;
 }

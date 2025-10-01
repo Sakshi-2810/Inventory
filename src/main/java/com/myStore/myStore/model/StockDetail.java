@@ -18,7 +18,7 @@ public class StockDetail {
     private String itemName;
     private double gst = 0.0;
     @NotNull
-    private Integer price;
+    private double price;
     @NotBlank
     private String unit;
 }
