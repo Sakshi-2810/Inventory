@@ -209,7 +209,13 @@ document.getElementById('stockSearchInput').addEventListener('input', function()
 });
 function goHome() { window.location.href='/index.html'; }
 function openAddModal() { document.getElementById('addStockModal').style.display='flex'; }
-function closeAddModal() { document.getElementById('addStockModal').style.display='none'; }
+function closeAddModal() { 
+    document.getElementById('addStockModal').style.display='none'; 
+    document.getElementById('newStockName').value = '';
+    document.getElementById('newUnit').value = '';
+    document.getElementById('newPrice').value = '';
+    document.getElementById('newGst').value = '';
+}
 
 async function loadStocks() {
     const tbody = document.querySelector('#stocksTable tbody');
@@ -309,7 +315,7 @@ async function saveNewStock(){
     const unit=document.getElementById('newUnit').value.trim();
     const price=parseFloat(document.getElementById('newPrice').value);
     const gst=parseFloat(document.getElementById('newGst').value);
-    if(!name || !unit || !price || !gst){ showNotification('Fill all details', 'error'); return; }
+    if(!name || !unit || !price){ showNotification('Fill all details', 'error'); return; }
     try{
         const response = await fetch('/stock/add', {
             method: 'POST',
