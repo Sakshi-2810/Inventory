@@ -14,7 +14,7 @@ public class SchedulerUtils {
 
     @Scheduled(cron = "0 */14 * * * *")
     public void performHealthCheck() {
-        String url = "https://invoice-l7c6.onrender.com/actuator/health";
+        String url = "https://inventory-dw1f.onrender.com/actuator/health";
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
             log.info("Health API Response: " + response.getBody());
