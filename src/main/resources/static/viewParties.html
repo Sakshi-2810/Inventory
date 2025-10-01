@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>View Parties</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Notification banner styles */
+.notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 300px;
+  max-width: 600px;
+  padding: 15px 20px;
+  border-radius: 5px;
+  color: #fff;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 9999;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideDown 0.5s ease;
+}
+
+.notification.success {
+  background-color: #28a745; /* green */
+}
+
+.notification.error {
+  background-color: #dc3545; /* red */
+}
+
+.notification .close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* Slide-down animation */
+@keyframes slideDown {
+  from { transform: translate(-50%, -50px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+        :root {
+            --primary: #1967d2;
+            --primary-dark: #174ea6;
+            --bg: #f4f8fb;
+            --card-bg: #fff;
+            --shadow: 0 6px 30px rgba(20,37,63,0.08);
+            --table-header: #f2f6fc;
+            --green: #21965a;
+            --red: #ef5350;
+            --font-main: 'Inter', Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg);
+            margin: 0;
+            min-height: 100vh;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 32px 32px 24px 32px;
+        }
+        h2, h3 {
+            color: var(--primary-dark);
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--card-bg);
+            box-shadow: none;
+        }
+        th, td {
+            padding: 14px 12px;
+            text-align: left;
+        }
+        th {
+            background: var(--table-header);
+            font-weight: 600;
+            border-bottom: 2px solid #e9eef4;
+        }
+        td {
+            border-bottom: 1px solid #eceff1;
+            font-size: 16px;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .green { color: var(--green); font-weight: 600; }
+        .red { color: var(--red); font-weight: 600; }
+        .btn {
+            padding: 8px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            outline: none;
+            border: none;
+            font-size: 15px;
+            transition: background 0.18s, box-shadow 0.18s, color 0.18s;
+            margin-right: 6px;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(25,103,210,0.06);
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+        .btn-danger {
+            background: var(--red);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            filter: brightness(0.95);
+        }
+        .btn-back {
+            background: #e3e9ef;
+            color: var(--primary-dark);
+        }
+        .btn-back:hover {
+            background: #cad6f3;
+        }
+        .invoice-list {
+            margin-top: 24px;
+            animation: fadeInUp 0.4s;
+        }
+        .invoice-item {
+            background: #f9fbfe;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 6px rgba(25,103,210,0.04);
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: background 0.14s, box-shadow 0.18s;
+            font-size: 15px;
+        }
+        .invoice-item:hover {
+            background: #e5eefc;
+            box-shadow: 0 3px 14px rgba(25,103,210,0.09);
+        }
+        @media (max-width: 700px) {
+            .container {
+                padding: 16px 4px 10px 4px;
+            }
+            th, td { padding: 8px 5px; font-size: 14px; }
+        }
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(20px);}
+            100% { opacity: 1; transform: none;}
+        }
+        .btn-home {
+    background: #e3e9ef;
+    color: #1967d2;
+    font-weight: 600;
+    border: none;
+    margin-right: 10px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 1px 6px rgba(25,103,210,0.05);
+    transition: background 0.18s, color 0.18s;
+}
+.btn-home:hover {
+    background: #cad6f3;
+    color: #174ea6;
+}
+/* Modal input styling */
+#partyForm input, 
+#partyForm textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#partyForm input:focus,
+#partyForm textarea:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
+}
+
+/* Label spacing */
+#partyForm label {
+  display: block;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+/* Textarea resize only vertically */
+#partyForm textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn.primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn.primary:hover {
+  background: #0056b3;
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid #ccc;
+  color: #333;
+}
+
+.btn.ghost:hover {
+  background: #f0f0f0;
+}
+
+/* Actions alignment */
+#partyForm .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+td[contenteditable="true"] {
+  background: #fdfdfd;
+  outline: none;
+}
+td[contenteditable="true"]:focus {
+  background: #fff3cd;
+}
+.btn {
+  margin-right: 5px;
+}
+
+
+    </style>
+</head>
+<body>
+    <!-- Banner container (fixed at top) -->
+<div id="notification" class="notification" style="display:none;">
+  <span id="notification-message"></span>
+  <button onclick="closeNotification()" class="close-btn">&times;</button>
+</div>
+
+<div class="container">
+    <button class="btn btn-home" onclick="goHome()" style="margin-bottom:18px;">
+        🏠 Home
+    </button>
+    <h2>Parties</h2>
+    <div style="margin-bottom:12px;">
+        <button class="btn btn-primary" onclick="openAddParty()">➕ Add Parties</button>
+    </div>
+    <div id="backdrop" style="
+        display:none;
+        position:fixed; top:0; left:0;
+        width:100%; height:100%;
+        background:rgba(0,0,0,0.6);
+        justify-content:center; align-items:center;
+        z-index:9999;
+        ">
+        <div id="modalContent" style="
+            background:#fff; padding:20px; border-radius:12px;
+            min-width:300px; max-width:500px; width:90%;
+        ">
+            <!-- dynamic content will be injected here -->
+        </div>
+        </div>
+    <div class="search-bar" style="margin-bottom:18px;">
+        <input type="text" id="partySearchInput" placeholder="Search parties…" style="
+        font-size:16px;
+        padding:10px 16px;
+        border-radius:8px;
+        border:1px solid #dee0e3;
+        min-width: 260px;
+        box-shadow: 0 2px 4px rgba(34,34,34,0.02);
+        outline: none;
+    ">
+    </div>
+    <table id="partiesTable">
+        <thead>
+        <tr>
+            <th class="sortable" data-index="0">Name <span></span></th>
+            <th class="sortable" data-index="1">Phone <span></span></th>
+            <th class="sortable" data-index="3">Address <span></span></th>
+            <th class="sortable" data-index="4">GSTIN <span></span></th>
+            <th class="sortable" data-index="5">Due Amount <span></span></th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="invoicesContainer" class="invoice-list" style="display:none;">
+        <h3 style="display:flex; justify-content:space-between; align-items:center;">
+            Invoices for <span id="selectedPartyName"></span>
+            <button class="btn btn-add" id="addAmountBtn">
+                Add Amount
+            </button>
+        </h3>
+        <div id="invoiceList"></div>
+        <button class="btn btn-back" onclick="backToParties()">Back to Parties</button>
+    </div>
+    
+</div>
+<script>
+    let currentParty = null;
+    // SEARCH
+document.getElementById('partySearchInput').addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    const trs = document.querySelectorAll('#partiesTable tbody tr');
+    trs.forEach(tr => {
+        const text = tr.textContent.toLowerCase();
+        tr.style.display = text.includes(filter) ? '' : 'none';
+    });
+});
+
+// SORT
+document.querySelectorAll('#partiesTable th.sortable').forEach(th => {
+    th.addEventListener('click', function() {
+        const index = Number(this.getAttribute('data-index'));
+        const tbody = th.closest('table').querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const asc = !(this.classList.contains('asc'));
+        rows.sort((a, b) => {
+            const cellA = a.children[index].innerText.trim().toLowerCase();
+            const cellB = b.children[index].innerText.trim().toLowerCase();
+            // Numeric sort for Due Amount
+            if (index === 4) {
+                return asc ? (parseFloat(cellA) - parseFloat(cellB)) : (parseFloat(cellB) - parseFloat(cellA));
+            }
+            return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+        });
+        rows.forEach(row => tbody.appendChild(row));
+        // Toggle sort order and arrow
+        document.querySelectorAll('#partiesTable th.sortable').forEach(h => {
+            h.classList.remove('asc', 'desc');
+            h.querySelector('span').textContent = '';
+        });
+        th.classList.add(asc ? 'asc' : 'desc');
+        th.querySelector('span').textContent = asc ? '▲' : '▼';
+    });
+});
+let partyList = [];
+
+    async function loadParties() {
+      const tbody = document.querySelector('#partiesTable tbody');
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>`;
+      try {
+        const res = await fetch('/parties');
+        const parties = (await res.json()).data;
+        tbody.innerHTML = '';
+        partyList = parties;
+
+        if (!parties.length) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No parties found.</td></tr>`;
+          return;
+        }
+
+        parties.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+           <tr data-name="${p.name}"">
+            <td contenteditable="true">${p.name}</td>
+            <td contenteditable="true">${p.phoneNumber || ''}</td>
+            <td contenteditable="true">${p.address || ''}</td>
+            <td contenteditable="true">${p.gstin || ''}</td>
+            <td contenteditable="false" class="${p.totalDue >= 0 ? 'green' : 'red'}">${p.totalDue || 0}</td>
+            <td>
+                <button class="btn btn-primary" onclick="viewInvoices('${p.name.replace(/'/g,"\\'")}')">View Invoices</button>
+                <button class="btn btn-success save-btn" style="display:none;"  data-id="${p.partyId}" onclick="saveRow(this)">Save</button>
+                ${p.totalDue === 0 
+                ? `<button class="btn btn-danger" onclick="deleteRow(this)" data-id="${p.partyId}" data-due="${p.totalDue}">Delete</button>` 
+                : ''}
+            </td>
+            </tr>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Error loading parties: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function viewInvoices(partyName) {
+    const partyRow = [...document.querySelectorAll('#partiesTable tbody tr')]
+        .find(tr => tr.children[0].innerText === partyName);
+
+    if (partyRow) {
+        currentParty = {
+            name: partyRow.children[0].innerText,
+            phoneNumber: partyRow.children[1].innerText,
+            address: partyRow.children[2].innerText,
+            gstin: partyRow.children[3].innerText,
+            amountAdded: 0 // fallback if missing
+        };
+    }
+
+    document.getElementById('partiesTable').style.display = 'none';
+    document.getElementById('invoicesContainer').style.display = 'block';
+    document.getElementById('selectedPartyName').textContent = partyName;
+
+    const listDiv = document.getElementById('invoiceList');
+    listDiv.innerHTML = 'Loading...';
+
+    try {
+        // const res = await fetch(`/invoices/partyname?partyName=${encodeURIComponent(partyName)}`);
+        const invoices = partyList.find(p => p.name === partyName).invoices;
+        listDiv.innerHTML = '';
+
+        if (!invoices.length) {
+            listDiv.textContent = 'No invoices found for this party.';
+            return;
+        }
+
+        invoices.sort((a, b) => b.invoiceId - a.invoiceId).forEach(inv => {
+            const div = document.createElement('div');
+            div.className = 'invoice-item';
+            
+            // Determine color based on transaction type and due amount
+            if (inv.transactionType === 'SELL') {
+                div.style.backgroundColor = inv.dueAmount > 0 ? '#d4edda' : '#f0f0f0'; // green or subtle grey
+                div.style.color = inv.dueAmount > 0 ? '#155724' : '#555';
+            } else if (inv.transactionType === 'BUY') {
+                div.style.backgroundColor = inv.dueAmount > 0 ? '#f8d7da' : '#f0f0f0'; // red or subtle grey
+                div.style.color = inv.dueAmount > 0 ? '#721c24' : '#555';
+            } else if (inv.transactionType === 'CASH') {
+                div.style.backgroundColor = '#d1ecf1'; // light blue
+                div.style.color = '#0c5460'; // darker blue
+            } else {
+                div.style.backgroundColor = '#f0f0f0';
+                div.style.color = '#555';
+            }
+
+            // Display invoice info including due amount
+            div.innerHTML = `
+                Invoice #${inv.invoiceId} · Date: ${inv.date} 
+                 ${inv.totalCost > 0 ? `· Total: ₹${inv.totalCost}` : ''}
+                ${inv.dueAmount > 0 ? `· Due: ₹${inv.dueAmount}` : ''}
+                ${inv.paidAmount > 0 ? `Paid: ₹${inv.paidAmount}` : ''}
+            `;
+
+            div.onclick = () => viewInvoicePage(inv.invoiceId);
+            div.style.padding = '8px';
+            div.style.marginBottom = '5px';
+            div.style.borderRadius = '5px';
+            div.style.cursor = 'pointer';
+
+            listDiv.appendChild(div);
+        });
+    } catch (err) {
+        listDiv.textContent = 'Error loading invoices: ' + err.message;
+    }
+}
+
+    function backToParties() {
+      document.getElementById('invoicesContainer').style.display = 'none';
+      document.getElementById('partiesTable').style.display = 'table';
+    }
+
+    function viewInvoicePage(invoiceId) {
+      window.location.href = `/viewSingleInvoice.html?id=${invoiceId}`;
+    }
+
+    loadParties();
+    function goHome() {
+    window.location.href = '/index.html';
+    }
+ 
+    const showModal = (html) => {
+    document.querySelector('#modalContent').innerHTML = html;
+    document.querySelector('#backdrop').style.display = 'flex';
+  };
+
+  const closeModal = () => {
+    document.querySelector('#backdrop').style.display = 'none';
+    document.querySelector('#modalContent').innerHTML = '';
+  };
+
+  document.querySelector('#backdrop').addEventListener('click', (e) => {
+    if (e.target.id === 'backdrop') closeModal();
+  });
+
+  function openAddParty() {
+    showModal(`
+      <h3>Add Party</h3>
+      <form id="partyForm">
+        <div class="row">
+          <label>Party name<input name="name" required></label>
+          <label>Phone<input name="phoneNumber"></label>
+          <label>Address<textarea name="address"></textarea></label>
+          <label>GSTIN<textarea name="gstin"></textarea></label>
+        </div>
+        <div class="actions" style="margin-top:15px; display:flex; gap:10px;">
+          <button type="button" class="btn ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn primary">Save</button>
+        </div>
+      </form>
+    `);
+
+    document.getElementById('partyForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target));
+
+      const payload = {
+        name: f.name,
+        phoneNumber: f.phoneNumber,
+        address: f.address,
+        gstin: f.gstin
+      };
+
+      try {
+        const res = await fetch('/party/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const msg = await res.text();
+          showNotification('Error saving party: ' + msg, 'error');
+          return;
+        }
+
+        const saved = await res.json();
+        showNotification('Party saved with ID ' + saved.data, 'success');
+        await loadParties();
+        closeModal();
+      } catch (err) {
+        console.error('Save failed', err);
+        showNotification('Failed to save party: ' + err.message, 'error');
+      }
+    });
+  }
+document.getElementById('addAmountBtn').addEventListener('click', async () => {
+    if (!currentParty) {
+        showNotification("No party selected.", 'error');
+        return;
+    }
+
+    const amount = prompt(`Enter amount to add for ${currentParty.name}:`);
+    if (!amount || isNaN(amount)) {
+        showNotification("Please enter a valid number.", 'error');
+        return;
+    }
+
+    // update in memory
+    currentParty.amountAdded = (currentParty.amountAdded || 0) + Number(amount);
+    const payload = {
+        partyName: currentParty.name,
+        transactionType:"CASH",
+        paidAmount: currentParty.amountAdded
+    }
+
+    try {
+        const res = await fetch('/generateInvoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const msg = await res.json().message;
+            showNotification('Error saving party: ' + msg, 'error');
+            return;
+        }
+
+        const saved = await res.json();
+        showNotification(`Amount added successfully for ${currentParty.name}!`, 'success');
+        await loadParties();
+        await viewInvoices(currentParty.name);
+    } catch (err) {
+        showNotification("Error while saving party: " + err.message, 'error');
+    }
+});
+// Detect changes and show Save button
+document.addEventListener("input", function(e) {
+  const row = e.target.closest("tr");
+  if (!row) return;
+  
+  const saveBtn = row.querySelector(".save-btn");
+  saveBtn.style.display = "inline-block";
+});
+
+// Save handler - calls /party/save
+async function saveRow(btn) {
+  const row = btn.closest("tr");
+  const cells = row.querySelectorAll("td[contenteditable='true']");
+  const partyId = btn.dataset.id ? parseInt(btn.dataset.id) : null;
+
+  const updatedParty = {
+    partyId: partyId, 
+    name: cells[0].innerText.trim(),
+    phoneNumber: cells[1].innerText.trim(),
+    address: cells[2].innerText.trim(),
+    gstin: cells[3].innerText.trim(),
+  };
+
+  try {
+    const response = await fetch('/party/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedParty)
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      showNotification('Party saved successfully!', 'success');
+      // Update row data-partyId if it was a new party
+      if (!row.dataset.partyId) row.dataset.partyId = data?.data?.partyId || null;
+      btn.style.display = "none"; // hide Save button
+    } else {
+      showNotification('Error saving party: ' + (data?.message || response.statusText), 'success');
+    }
+  } catch (err) {
+    console.error(err);
+    showNotification('Error saving party', 'error');
+  }
+}
+
+// Delete handler - calls /party/delete
+async function deleteRow(btn) {
+  const row = btn.closest("tr");
+  const partyId = btn.dataset.id ? parseInt(btn.dataset.id) : null;
+  const dueAmount = btn.dataset.due ? parseInt(btn.dataset.due) : null;
+
+  if (!partyId) {
+    showNotification("PartyId can't be null", 'error');
+  }
+
+  if(dueAmount != 0) {
+    showNotification("Settle the account first to delete this party", 'error')
+  }
+
+  if (!confirm(`Are you sure you want to delete ${row.cells[0].innerText}?`)) return;
+
+  try {
+    const response = await fetch(`/party/delete?partyId=${partyId}&dueAmount=${dueAmount}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      showNotification('Party deleted successfully!', 'success');
+      row.remove();
+    } else {
+      showNotification('Error deleting party: ' + (data?.message || response.statusText), 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showNotification('Error deleting party', 'error');
+  }
+}
+// Show notification
+function showNotification(message, type = 'success', duration = 3000) {
+  const banner = document.getElementById('notification');
+  const messageSpan = document.getElementById('notification-message');
+
+  banner.className = `notification ${type}`; // success or error
+  messageSpan.innerText = message;
+  banner.style.display = 'flex';
+
+  // Auto hide after duration
+  setTimeout(() => {
+    banner.style.display = 'none';
+  }, duration);
+}
+
+// Close button
+function closeNotification() {
+  document.getElementById('notification').style.display = 'none';
+}
+</script>
+</body>
+</html>

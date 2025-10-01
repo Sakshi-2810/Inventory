@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>View Invoice</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+         /* Notification banner styles */
+.notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 300px;
+  max-width: 600px;
+  padding: 15px 20px;
+  border-radius: 5px;
+  color: #fff;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 9999;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideDown 0.5s ease;
+}
+
+.notification.success {
+  background-color: #28a745; /* green */
+}
+
+.notification.error {
+  background-color: #dc3545; /* red */
+}
+
+.notification .close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+    .modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  min-width: 300px;
+  text-align: center;
+}
+.modal-content input {
+  width: 90%;
+  padding: 8px;
+  margin: 10px 0;
+}
+.actions {
+  display: flex;
+  justify-content: space-around;
+}
+    :root {
+      --primary: #1967d2;
+      --primary-dark: #174ea6;
+      --danger: #ef5350;
+      --bg: #f6f8fb;
+      --card-bg: #fff;
+      --input-bg: #f9fbfff6;
+      --shadow: 0 6px 30px rgba(20,37,63,0.09);
+      --header: #f2f6fc;
+      --gray: #e3e9ef;
+      --radius: 14px;
+      --font-main: 'Inter', Arial, sans-serif;
+    }
+  button {
+            font-family: var(--font-main);
+            cursor: pointer;
+            border-radius: var(--radius);
+            border: none;
+            padding: 8px 16px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+          }
+
+        button:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
+    body { font-family: var(--font-main); background: var(--bg); margin: 0; min-height: 100vh; padding: 0; }
+    .container { max-width: 680px; margin: 38px auto; background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px 30px 24px 30px; }
+    .header-row { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; }
+    h2 { margin: 0 0 5px 0; color: var(--primary-dark); font-weight: 600; font-size: 2em; }
+    .subtitle { color: #8895b3; font-size: 1.1em; margin-bottom: 20px; }
+    label { font-weight: 600; color: #222b45; margin: 9px 0 5px 2px; display: block; }
+    input, select { width: 100%; box-sizing: border-box; padding: 9px 11px; margin-bottom: 14px; font-size: 1em; background: var(--input-bg); border-radius: 7px; border: 1px solid #dde5f1; }
+    input[readonly] { background: #f7fafd; color: #536376; }
+    table { width:100%; border-collapse: collapse; margin: 6px 0 20px 0; }
+    th, td { padding: 13px 11px; text-align: left; border-bottom: 1px solid #f0f1f4; }
+    th { background: var(--header); font-weight: 600; color: var(--primary-dark); border-bottom: 2px solid #dde3eb; }
+    .form-row { display: flex; gap: 18px; margin-bottom: 10px; flex-wrap: wrap; }
+    .form-row > div { flex: 1 1 160px; min-width: 130px; }
+    .actions { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn { padding: 10px 22px; border: none; border-radius: 7px; font-size: 1em; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-back, .btn-home { background: var(--gray); color: var(--primary-dark); }
+    .spinner { width: 48px; height: 48px; border: 6px solid #e2e8f7; border-top: 6px solid #1967d2; border-radius: 50%; animation: spin 0.77s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loaderOverlay { opacity: 1; pointer-events: all; }
+    #loaderOverlay.hide { opacity: 0; pointer-events: none; }
+    .spinner {
+        border: 3px solid #f3f3f3; /* Light grey */
+        border-top: 3px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 8px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      #firmGst {
+  width: 90%;
+  padding: 10px 12px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+  resize: vertical; /* allow resize only up-down */
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#firmGst:focus {
+  border-color: #007bff; /* blue highlight */
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.5);
+  outline: none;
+}
+
+  </style>
+</head>
+<body>
+    <!-- Banner container (fixed at top) -->
+<div id="notification" class="notification" style="display:none;">
+  <span id="notification-message"></span>
+  <button onclick="closeNotification()" class="close-btn">&times;</button>
+</div>
+
+<div class="container">
+  <div id="loaderOverlay" style="position: fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(255,255,255,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity 0.22s;">
+    <div style="display:flex;flex-direction:column;align-items:center;">
+      <div class="spinner"></div>
+      <div style="margin-top:16px;color:#1967d2;font-weight:600;font-size:1.07em;">Loading...</div>
+    </div>
+  </div>
+
+  <div class="header-row">
+    <button class="btn btn-home" onclick="goHome()">🏠 Home</button>
+    <button class="btn btn-back" onclick="goBack()">← Back</button>
+    <h2>Invoice #<span id="invoiceId"></span></h2>
+  </div>
+
+  <div class="subtitle"><span id="invoiceDate"></span></div>
+
+  <div>
+    <label>Party Name</label>
+    <input id="partyName" type="text" readonly>
+    <label>Transaction Type</label>
+    <select id="transactionType" readonly="true">
+      <option value="SELL">SELL</option>
+      <option value="BUY">BUY</option>
+      <option value="CASH">CASH</option>
+    </select>
+
+    <table id="stockTable">
+      <thead>
+        <tr><th>Stock Name</th><th>Quantity</th><th>Unit</th><th>Price</th><th>GST (%)</th><th></th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button type="button" id="addRowBtn">➕ Add Stock</button>
+
+    <datalist id="stockOptions"></datalist>
+
+    <div class="form-row">
+      <div><label>Total Cost</label><input id="totalCost" type="text" readonly></div>
+      <div><label>Additional Discount</label><input id="additionalDiscount" type="number" min="0"></div>
+      <div><label>Amount Paid</label><input id="paidAmount" type="number" min="0"></div>
+    </div>
+
+    <button class="btn btn-primary" id="btnSave">
+      <span class="btn-text">Save Changes</span>
+      <span class="spinner" style="display:none;"></span>
+    </button>
+    <button class="btn btn-danger" id="btnDelete" onclick="deleteCurrentInvoice(this)">
+      <span class="btn-text">Delete Invoice</span>
+      <span class="spinner" style="display:none;"></span>
+    </button>
+
+    <button class="btn btn-primary" id="btnDownload" onclick="promptGST(this)">
+      <span class="btn-text">Download PDF</span>
+      <span class="spinner" style="display:none;"></span>
+    </button>
+    <div id="gstModal" class="modal">
+      <div class="modal-content">
+        <h3>Enter Firm GST Details</h3>
+        <textarea id="firmGst" placeholder="Enter GST details" rows="4" style="width:90%; padding:8px; margin:10px 0;"></textarea>
+        <div class="actions">
+          <button class="btn btn-success" onclick="confirmGST()">OK</button>
+          <button class="btn btn-danger" onclick="closeGSTModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="pdfPreviewModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:10000;">
+  <div style="background:white;padding:20px;border-radius:10px;width:80%;height:80%;overflow:auto;">
+    <h3 style="margin-top:0;">Invoice PDF Preview</h3>
+    <iframe id="pdfFrame" style="width:100%;height:90%;border:0;"></iframe>
+    <div style="margin-top:10px;text-align:right;">
+      <button class="btn btn-danger" onclick="closePreview()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentBtn = null;
+
+// Step 1: Open modal on button click
+function promptGST(btn) {
+  currentBtn = btn;
+  document.getElementById("gstModal").style.display = "flex";
+}
+
+// Step 2: Close modal
+function closeGSTModal() {
+  document.getElementById("gstModal").style.display = "none";
+  document.getElementById("gstModal").querySelector("textarea").value = "";
+  currentBtn = null;
+}
+
+// Step 3: Confirm GST and call downloadInvoice
+function confirmGST() {
+  const gstValue = document.getElementById("firmGst").value.trim().replace(/\n/g, "<br>");
+  closeGSTModal();
+  downloadInvoice(document.getElementById("btnDownload"), gstValue);
+}
+  const params = new URLSearchParams(window.location.search);
+  const invoiceId = params.get('id');
+
+  const invoiceFields = {
+    partyName: document.getElementById('partyName'),
+    transactionType: document.getElementById('transactionType'),
+    totalCost: document.getElementById('totalCost'),
+    additionalDiscount: document.getElementById('additionalDiscount'),
+    paidAmount: document.getElementById('paidAmount')
+  };
+  
+  let invoiceData = null;
+
+  function goHome(){ window.location.href = '/'; }
+  function goBack(){ window.history.back(); }
+
+  async function loadInvoice() {
+    try {
+      const res = await fetch(`/invoice?invoiceId=${invoiceId}`);
+      if (!res.ok) throw new Error('Failed to fetch invoice data');
+      invoiceData = (await res.json()).data;
+
+      document.getElementById('invoiceId').textContent = invoiceData.invoiceId;
+      document.getElementById('invoiceDate').textContent = invoiceData.date ? `Date: ${invoiceData.date}` : '';
+      invoiceFields.partyName.value = invoiceData.partyName;
+      invoiceFields.transactionType.value = invoiceData.transactionType;
+      invoiceFields.totalCost.value = invoiceData.totalCost || 0;
+      invoiceFields.additionalDiscount.value = invoiceData.additionalDiscount || 0;
+      invoiceFields.paidAmount.value = invoiceData.paidAmount || 0;
+
+      tbody.innerHTML = '';
+      (invoiceData.stockBills || []).forEach(s => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td><input type="text" value="${s.itemName}"></td>
+                         <td><input type="number" value="${s.quantity}"></td>
+                         <td><input type="text" value="${s.unit}"></td>
+                         <td><input type="number" value="${s.price}"></td>
+                         <td><input type="number" value="${s.gst}"></td>
+                         <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>`;
+         row.querySelector('.removeBtn').addEventListener('click', () => row.remove());
+         tbody.appendChild(row);
+      });
+    } catch (err) {
+      showNotification('Error: ' + err.message, 'error');
+    } finally { hideLoader(); }
+  }
+
+  document.getElementById('btnSave').addEventListener('click', async () => {
+    const spinner = btnSave.querySelector('.spinner');
+    const btnText = btnSave.querySelector('.btn-text');
+    spinner.style.display = 'inline-block';
+    btnText.style.display = 'none';
+    btnSave.disabled = true;
+
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const stockBills = rows.map(r => ({
+      itemName: r.cells[0].querySelector('input').value.trim(),
+      quantity: Number(r.cells[1].querySelector('input').value || 0),
+      unit: r.cells[2].querySelector('input').value.trim(),
+      price: Number(r.cells[3].querySelector('input').value || 0),
+      gst: Number(r.cells[4].querySelector('input').value || 0)
+    }));
+
+    const payload = { ...invoiceData,
+      invoiceId: Number(invoiceId),
+      partyName: invoiceFields.partyName.value,
+      transactionType: invoiceFields.transactionType.value,
+      stockBills,
+      totalCost: Number(invoiceFields.totalCost.value || 0),
+      additionalDiscount: Number(invoiceFields.additionalDiscount.value || 0),
+      paidAmount: Number(invoiceFields.paidAmount.value || 0)
+    };
+
+    try {
+      await fetch('/generateInvoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      showNotification('Invoice saved successfully.', 'success');
+      location.reload(); 
+    } catch (err) { showNotification('Error saving invoice: ' + err.message, 'error'); }
+    finally{ 
+    spinner.style.display = 'none';
+    btnText.style.display = 'inline';
+    btnSave.disabled = false;
+  }
+  });
+
+  function showLoader(){ document.getElementById('loaderOverlay').classList.remove('hide'); }
+  function hideLoader(){ document.getElementById('loaderOverlay').classList.add('hide'); }
+  showLoader(); loadInvoice(); loadStocks();
+  let stockData = [];
+const tbody = document.querySelector('#stockTable tbody');
+const addRowBtn = document.getElementById('addRowBtn');
+const stockOptions = document.getElementById('stockOptions');
+
+// Load stock data
+async function loadStocks() {
+  try {
+    const res = await fetch('/stock/summary');
+    if (!res.ok) throw new Error("Failed to fetch stock summary");
+    stockData = (await res.json()).data;
+
+    // Populate datalist options
+    stockOptions.innerHTML = stockData.map(s =>
+      `<option value="${s.itemName}" data-unit="${s.unit}" data-price="${s.price}" data-gst="${s.gst}">`
+    ).join('');
+  } catch (err) {
+    showNotification("Error loading stock data: " + err.message, "error");
+  } finally {
+    hideLoader();
+  }
+}
+ function downloadInvoice(button, gstDetails) {
+    const params = new URLSearchParams(window.location.search);
+    const invoiceId = params.get('id');
+    if (!invoiceId) return showNotification("Invoice ID missing", 'error');
+
+    const spinner = button.querySelector('.spinner');
+    const btnText = button.querySelector('.btn-text');
+    spinner.style.display = 'inline-block';
+    btnText.style.display = 'none';
+    button.disabled = true;
+
+    fetch(`/print?invoiceId=${encodeURIComponent(invoiceId)}&gstDetails=${encodeURIComponent(gstDetails)}`)
+        .then(res => res.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Invoice_${invoiceId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(err => console.error("PDF download failed:", err)).finally(() => {
+            spinner.style.display = 'none';
+            btnText.style.display = 'inline-block';
+            button.disabled = false;
+        });
+      }
+       addRowBtn.addEventListener('click', createRow);
+       function createRow() {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input type="text" list="stockOptions" class="stockInput" placeholder="Stock" required></td>
+        <td><input type="number" min="1" value="1" class="qtyInput" required style="width:80px;"></td>
+        <td><input type="text" class="unitInput" style="width:80px;" required></td>
+        <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;" required></td>
+        <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;" required></td>
+       <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>
+        `;
+      const qtyInput = row.querySelector('.qtyInput');
+      const stockInput = row.querySelector('.stockInput');
+      const unitInput = row.querySelector('.unitInput');
+      const priceInput = row.querySelector('.priceInput');
+      const gstInput = row.querySelector('.gstInput');
+      
+        stockInput.addEventListener('change', function () {
+        const stock = stockData.find(s => s.itemName.toLowerCase() === this.value.toLowerCase());
+        if (stock) {
+          unitInput.value = stock.unit;
+          priceInput.value = stock.price;
+          gstInput.value = stock.gst;
+        } else {
+          unitInput.value = '';
+          priceInput.value = '';
+          gstInput.value = '';
+        }
+        });
+
+        row.querySelector('.removeBtn').addEventListener('click', () => row.remove());
+        tbody.appendChild(row);
+      }
+      // Show notification
+function showNotification(message, type = 'success', duration = 3000) {
+  const banner = document.getElementById('notification');
+  const messageSpan = document.getElementById('notification-message');
+
+  banner.className = `notification ${type}`; // success or error
+  messageSpan.innerText = message;
+  banner.style.display = 'flex';
+
+  // Auto hide after duration
+  setTimeout(() => {
+    banner.style.display = 'none';
+  }, duration);
+}
+
+// Close button
+function closeNotification() {
+  document.getElementById('notification').style.display = 'none';
+}
+async function deleteCurrentInvoice(button) {
+  const params = new URLSearchParams(window.location.search);
+  const invoiceId = params.get("id");;
+  if (!invoiceId) {
+    showNotification("No invoice ID found in URL", "error");
+    return;
+  }
+ const spinner = button.querySelector(".spinner");
+  const text = button.querySelector(".btn-text");
+
+  // Show loader
+  text.style.display = "none";
+  spinner.style.display = "inline-block";
+
+  if (!confirm(`Are you sure you want to delete Invoice #${invoiceId}?`)) return;
+
+  try {
+    const res = await fetch(`/invoice/delete?invoiceId=${invoiceId}`, {
+      method: "DELETE"
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      showNotification(`Invoice #${invoiceId} deleted successfully!`, "success");
+      // redirect to invoice list after delete
+      setTimeout(() => {
+        window.location.href = "/viewParties.html";
+      }, 1500);
+    } else {
+      showNotification(data.message || "Failed to delete invoice", "error");
+    }
+  } catch (err) {
+    console.error("Delete failed:", err);
+    showNotification("Something went wrong while deleting invoice", "error");
+  } finally {
+    // Restore button text & hide spinner
+    text.style.display = "inline";
+    spinner.style.display = "none";
+  }
+}
+
+</script>
+
+</body>
+</html>
