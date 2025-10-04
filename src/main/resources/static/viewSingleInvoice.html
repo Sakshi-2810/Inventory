@@ -171,7 +171,13 @@
   box-shadow: 0 0 4px rgba(0, 123, 255, 0.5);
   outline: none;
 }
-
+.note {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  font-style: italic;
+}
   </style>
 </head>
 <body>
@@ -219,9 +225,11 @@
     <datalist id="stockOptions"></datalist>
 
     <div class="form-row">
-      <div><label>Total Cost</label><input id="totalCost" type="text" readonly></div>
+      <div><label>Total Cost</label><input id="totalCost" type="text" readonly>
+          <small class="note">* Includes discount and GST</small> 
+      </div>
       <div><label>GST</label><input id="gst" type="text" readonly></div>
-      <div><label>Additional Discount</label><input id="additionalDiscount" type="number" min="0"></div>
+      <div><label>Additional Discount</label><input id="additionalDiscount" type="text"></div>
       <div><label>Amount Paid</label><input id="paidAmount" type="number" min="0"></div>
     </div>
 
@@ -366,7 +374,7 @@ function confirmGST() {
       transactionType: invoiceFields.transactionType.value,
       stockBills,
       totalCost: Number(invoiceFields.totalCost.value || 0),
-      additionalDiscount: Number(invoiceFields.additionalDiscount.value || 0),
+      additionalDiscount: invoiceFields.additionalDiscount.value || '',
       paidAmount: Number(invoiceFields.paidAmount.value || 0),
       date: toDisplayFormat(document.getElementById("invoiceDate").value)
     };
@@ -440,9 +448,11 @@ async function loadStocks() {
        addRowBtn.addEventListener('click', createRow);
        function createRow() {
       const row = document.createElement('tr');
+         const rowCount = document.querySelector('#stockTable tbody').rows.length + 1;
       row.innerHTML = `
+        <td>${rowCount}</td>
         <td><input type="text" list="stockOptions" class="stockInput" placeholder="Stock" required></td>
-        <td><input type="number" min="1" value="1" class="qtyInput" required style="width:80px;"></td>
+        <td><input type="number" min="1" placeholder="Qty" class="qtyInput" required style="width:80px;"></td>
         <td><input type="text" class="unitInput" style="width:80px;" required></td>
         <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;" required></td>
         <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;" required></td>

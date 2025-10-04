@@ -27,7 +27,7 @@ public class InvoiceDto {
     private String transactionType;
     private Integer paidAmount = 0;
     private Integer dueAmount;
-    private Integer additionalDiscount = 0;
+    private String additionalDiscount;
     private double subTotal = 0;
     private double tax = 0;
 }

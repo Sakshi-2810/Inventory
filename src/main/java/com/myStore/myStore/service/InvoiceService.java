@@ -41,7 +41,9 @@ public class InvoiceService {
         return maxId + 1;
     }
 
-    public Response saveInvoice(Invoice invoice) {
+    public Response saveInvoice(InvoiceDto invoiceDto) {
+        Invoice invoice = modelMapper.map(invoiceDto, Invoice.class);
+
         Invoice existingInvoice = invoice.getInvoiceId() == null ? null : invoiceRepository.findById(invoice.getInvoiceId()).orElse(null);
         if (existingInvoice == null) {
             invoice.setInvoiceId(generateNewInvoiceId());
@@ -49,7 +51,17 @@ public class InvoiceService {
         }
 
         Integer totalCost = calculateTotalCost(invoice.getStockBills());
-        totalCost -= invoice.getAdditionalDiscount();
+        invoice.setSubTotal(calculateSubTotal(invoice.getStockBills()));
+        invoice.setTax(totalCost - invoice.getSubTotal());
+
+        if (!invoice.getAdditionalDiscount().isBlank()) {
+            if (invoice.getAdditionalDiscount().contains("%")) {
+                double discountValue = Double.parseDouble(invoice.getAdditionalDiscount().replace("%", "").trim());
+                totalCost -= (int) Math.round((totalCost * discountValue) / 100.0);
+            } else {
+                totalCost -= (int) Double.parseDouble(invoice.getAdditionalDiscount());
+            }
+        }
 
         invoice.setTotalCost(totalCost);
         invoice.setDueAmount(totalCost - invoice.getPaidAmount());
@@ -69,11 +81,24 @@ public class InvoiceService {
         return (int) Math.round(stockBills.stream().mapToDouble(stockBill -> (stockBill.getQuantity() * stockBill.getPrice()) * (100.0 + stockBill.getGst()) / 100.0).sum());
     }
 
-    public  Response calcCostInJson(Invoice invoice) {
+    public double calculateSubTotal(List<StockBill> stockBills) {
+        return stockBills.stream().mapToDouble(stockBill -> stockBill.getQuantity() * stockBill.getPrice()).sum();
+    }
+
+    public Response calcCostInJson(Invoice invoice) {
         Integer cost = calculateTotalCost(invoice.getStockBills());
-        double subTotal = invoice.getStockBills().stream().map(stockBill -> stockBill.getQuantity() * stockBill.getPrice()).reduce(0.0, Double::sum);
+        double subTotal = calculateSubTotal(invoice.getStockBills());
+
         double tax = cost - subTotal;
-        return new Response(Map.of("Cost", cost-invoice.getAdditionalDiscount(), "Tax", tax), "Total cost calculated successfully");
+        if (!invoice.getAdditionalDiscount().isBlank()) {
+            if (invoice.getAdditionalDiscount().contains("%")) {
+                double discountValue = Double.parseDouble(invoice.getAdditionalDiscount().replace("%", "").trim());
+                cost -= (int) Math.round((cost * discountValue) / 100.0);
+            } else {
+                cost -= (int) Double.parseDouble(invoice.getAdditionalDiscount());
+            }
+        }
+        return new Response(Map.of("Cost", cost, "Tax", tax), "Total cost calculated successfully");
     }
 
     public Response getInvoiceById(Integer invoiceId) {
@@ -81,10 +106,7 @@ public class InvoiceService {
         if (invoice == null) {
             throw new CustomDataException("Invoice does not exist");
         }
-        double subTotal = invoice.getStockBills().stream().map(stockBill -> stockBill.getQuantity() * stockBill.getPrice()).reduce(0.0, Double::sum);
         InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
-        invoiceDto.setSubTotal(subTotal);
-        invoiceDto.setTax(invoice.getTotalCost() + invoice.getAdditionalDiscount() - subTotal);
         return new Response(invoiceDto, "Invoice fetched successfully");
     }
 
@@ -117,22 +139,15 @@ public class InvoiceService {
         htmlContent = htmlContent.replace("{{partyPhone}}", party.getPhoneNumber() == null ? "" : party.getPhoneNumber());
         htmlContent = htmlContent.replace("{{partyGSTIN}}", party.getGstin() == null ? "" : party.getGstin());
         htmlContent = htmlContent.replace("{{Total}}", String.valueOf(invoice.getTotalCost()));
-
-        double subTotal = invoice.getStockBills().stream().map(stockBill -> stockBill.getQuantity() * stockBill.getPrice()).reduce(0.0, Double::sum);
-        htmlContent = htmlContent.replace("{{subtotal}}", String.valueOf(subTotal));
-        htmlContent = htmlContent.replace("{{Tax}}", String.valueOf((invoice.getTotalCost() + invoice.getAdditionalDiscount() - subTotal) / 2.0));
-
-        htmlContent = htmlContent.replace("{{Discount}}", String.valueOf(invoice.getAdditionalDiscount()));
+        htmlContent = htmlContent.replace("{{subtotal}}", String.valueOf(invoice.getSubTotal()));
+        htmlContent = htmlContent.replace("{{Tax}}", String.valueOf((invoice.getTax()) / 2.0));
+        htmlContent = htmlContent.replace("{{Discount}}", invoice.getAdditionalDiscount());
 
         StringBuilder itemsRows = new StringBuilder();
+        int index = 0;
         for (StockBill partBill : invoice.getStockBills()) {
             Integer totalPrice = (int) Math.round((partBill.getQuantity() * partBill.getPrice()) * (100.0 + partBill.getGst()) / 100.0);
-            itemsRows.append("<tr>")
-                    .append("<td style='padding:8px; border:1px solid #ddd;'>").append(partBill.getItemName()).append("</td>")
-                    .append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(String.format("%.3f", partBill.getQuantity())).append("</td>")
-                    .append("<td style='text-align:left;padding:8px; border:1px solid #ddd;'>").append(partBill.getUnit()).append("</td>")
-                    .append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(partBill.getPrice()).append("</td>")
-                    .append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(partBill.getGst()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(totalPrice).append("</td>").append("</tr>");
+            itemsRows.append("<tr>").append("<td style='padding:8px; border:1px solid #ddd;'>").append(++index).append("</td>").append("<td style='padding:8px; border:1px solid #ddd;'>").append(partBill.getItemName()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(String.format("%.3f", partBill.getQuantity())).append("</td>").append("<td style='text-align:left;padding:8px; border:1px solid #ddd;'>").append(partBill.getUnit()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(partBill.getPrice()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(partBill.getGst()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(totalPrice).append("</td>").append("</tr>");
         }
         htmlContent = htmlContent.replace("{{invoiceItems}}", itemsRows.toString());
 

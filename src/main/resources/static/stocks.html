@@ -144,11 +144,13 @@ input.inline-edit:focus { border-color: var(--primary); outline: none; }
 </div>
 
 <div class="container">
-    <button class="btn btn-home" onclick="goHome()">🏠 Home</button>
-    <h2>Stocks</h2>
+    
     <div style="margin-bottom:12px;">
+        <button class="btn btn-home" onclick="goHome()">🏠 Home</button>
         <button class="btn btn-primary" onclick="openAddModal()">➕ Add Stock</button>
     </div>
+
+    <h2>Stocks</h2>
      <div class="search-bar" style="margin-bottom:18px;">
         <input type="text" id="stockSearchInput" placeholder="Search stocks..." style="
         font-size:16px;
@@ -203,8 +205,10 @@ document.getElementById('stockSearchInput').addEventListener('input', function()
     const filter = this.value.toLowerCase();
     const trs = document.querySelectorAll('#stocksTable tbody tr');
     trs.forEach(tr => {
-        const text = tr.textContent.toLowerCase();
-        tr.style.display = text.includes(filter) ? '' : 'none';
+        const inputs = tr.querySelectorAll('input');
+        const rowValues = Array.from(inputs).map(i => i.value.toLowerCase()).join(" ");
+<!--        console.log(rowValues);-->
+        tr.style.display = rowValues.includes(filter) ? '' : 'none';
     });
 });
 function goHome() { window.location.href='/index.html'; }
@@ -228,11 +232,13 @@ async function loadStocks() {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No stocks found</td></tr>';
             return;
         }
-
+        
+        let rowCount = 0;
         stocksData.forEach(stock => {
             const tr = document.createElement('tr');
+            rowCount += 1;
             tr.innerHTML = `
-                <td>${stock.itemId}</td>
+                <td>${rowCount}</td>
                 <td><input class="stock-input" value="${stock.itemName}" data-field="name"></td>
                 <td><input class="stock-input" value="${stock.unit}" data-field="unit"></td>
                 <td><input class="stock-input" type="number" step="1" value="${stock.price}" data-field="price"></td>

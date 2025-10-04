@@ -287,13 +287,14 @@ td[contenteditable="true"]:focus {
 </div>
 
 <div class="container">
-    <button class="btn btn-home" onclick="goHome()" style="margin-bottom:18px;">
-        🏠 Home
-    </button>
-    <h2>Parties</h2>
-    <div style="margin-bottom:12px;">
-        <button class="btn btn-primary" onclick="openAddParty()">➕ Add Parties</button>
+   <div style="margin-bottom:12px;">
+        <button class="btn btn-home" onclick="goHome()" style="margin-bottom:18px;">
+            🏠 Home
+        </button>
+        <button class="btn btn-primary" onclick="openAddParty()">➕ Add Parties</button>        
     </div>
+    <h2>Parties</h2>
+   
     <div id="backdrop" style="
         display:none;
         position:fixed; top:0; left:0;
@@ -391,6 +392,10 @@ let partyList = [];
       tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>`;
       try {
         const res = await fetch('/parties');
+        if(!res.ok) {
+          showNotification("Failed to load parties", 'error');
+          return;
+        }
         const parties = (await res.json()).data;
         tbody.innerHTML = '';
         partyList = parties;

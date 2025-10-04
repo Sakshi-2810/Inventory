@@ -38,7 +38,7 @@ window.addEventListener('DOMContentLoaded', async () => {
        row.innerHTML = `
         <td>${rowCount}</td>
         <td><input type="text" list="stockOptions" class="stockInput" placeholder="Search stock..." required></td>
-        <td><input type="number" min="1" value="1" class="qtyInput" required style="width:80px;"></td>
+        <td><input type="number" min="1" placeholder="Qty" class="qtyInput" required style="width:80px;"></td>
         <td><input type="text" class="unitInput" style="width:80px;"></td>
         <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;"></td>
         <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;"></td>
@@ -57,6 +57,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           const gst = parseFloat(gstInput.value) || 0;
           const total = qty * price * (1 + gst / 100);
           totalInput.value = Math.round(total);
+          // calculateCost();
         }
         stockInput.addEventListener('change', function () {
         const stock = stockData.find(s => s.itemName.toLowerCase() === this.value.toLowerCase());
@@ -81,7 +82,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         updateTotal();
       }
 
-      createRow();
+      // createRow();
       addRowBtn.addEventListener('click', createRow);
     } catch (err) {
       showNotification('Error loading data: ' + err.message, 'error');
@@ -92,7 +93,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 async function calculateCost() {
   const tbody = document.querySelector('#stockTable tbody');
-  const additionalDiscount = document.getElementById("additionalDiscount");
+  let additionalDiscount = document.getElementById("additionalDiscount").value;
+  if(document.getElementById("discountType").value == "percent") {
+     additionalDiscount += '%';
+  }
 
   const rows = Array.from(tbody.querySelectorAll('tr'));
   const stockBills = rows.map(row => {
@@ -106,7 +110,7 @@ async function calculateCost() {
   }).filter(Boolean);
 
   if (stockBills.length === 0) {
-    showNotification('Please enter at least one stock with quantity > 0', 'error');
+    // showNotification('Please enter at least one stock with quantity > 0', 'error');
     return;
   }
   const btn = document.getElementById('calculateBtn');
@@ -122,7 +126,7 @@ async function calculateCost() {
     const res = await fetch('/calculate/cost', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ stockBills, additionalDiscount:Number(additionalDiscount.value, 0) })
+    body: JSON.stringify({ stockBills, additionalDiscount:additionalDiscount || '' })
     });
     if (!res.ok) throw new Error('Failed to calculate cost');
     const data = await res.json();
@@ -153,11 +157,15 @@ document.getElementById('invoiceForm').addEventListener('submit', async e => {
   return null;
   }).filter(Boolean);
 
+  let additionalDiscount =fd.get('additionalDiscount');
+  if(document.getElementById("discountType").value == "percent") {
+     additionalDiscount += '%';
+  }
 const invoice = {
   partyName: fd.get('partyName'),
   transactionType: fd.get('transactionType'),
   stockBills,
-  additionalDiscount: Number(fd.get('additionalDiscount') || 0),
+  additionalDiscount: additionalDiscount || '',
   paidAmount: Number(fd.get('paidAmount') || 0)
 };
 if(!invoice.partyName) {

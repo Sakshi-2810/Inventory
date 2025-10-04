@@ -289,10 +289,23 @@
             <label for="gst">Total GST</label>
             <input id="gst" type="text" readonly value="Click Calculate">
         </div>
-        <div class="form-group">
-            <label for="additionalDiscount">Additional Discount</label>
-            <input name="additionalDiscount" id="additionalDiscount" type="number" min="0" placeholder="0">
+       <div class="form-group">
+          <label for="additionalDiscount">Additional Discount</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input 
+              name="additionalDiscount" 
+              id="additionalDiscount" 
+              type="number" 
+              min="0" 
+              placeholder="Enter discount" 
+            >
+            <select id="discountType" >
+              <option value="amount">₹ Amount</option>
+              <option value="percent">% Percent</option>
+            </select>
+          </div>
         </div>
+
         <div class="form-group">
             <label for="paidAmount">Amount Paid</label>
             <input name="paidAmount" id="paidAmount" type="number" min="0" placeholder="0">

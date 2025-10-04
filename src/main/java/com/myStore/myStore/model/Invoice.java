@@ -22,10 +22,12 @@ public class Invoice {
     private List<StockBill> stockBills = new ArrayList<>();
     private String date;
     private Integer totalCost;
+    private double subTotal = 0.0;
+    private double tax = 0.0;
     @NotBlank
     @Pattern(regexp = "BUY|SELL|CASH", message = "Transaction type must be BUY or SELL or CASH")
     private String transactionType;
     private Integer paidAmount = 0;
     private Integer dueAmount;
-    private Integer additionalDiscount = 0;
+    private String additionalDiscount;
 }
