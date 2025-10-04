@@ -34,12 +34,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     function createRow() {
       const row = document.createElement('tr');
-      row.innerHTML = `
+       const rowCount = tbody.rows.length + 1;
+       row.innerHTML = `
+        <td>${rowCount}</td>
         <td><input type="text" list="stockOptions" class="stockInput" placeholder="Search stock..." required></td>
         <td><input type="number" min="1" value="1" class="qtyInput" required style="width:80px;"></td>
         <td><input type="text" class="unitInput" style="width:80px;"></td>
-        <td><input type="number" min="0" step="0.01" class="priceInput" style="width:80px;"></td>
-        <td><input type="number" min="0" step="0.01" class="gstInput" style="width:60px;"></td>
+        <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;"></td>
+        <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;"></td>
        <td><input type="number" class="totalInput" style="width:100px;" readonly></td>
        <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>
         `;
@@ -124,7 +126,8 @@ async function calculateCost() {
     });
     if (!res.ok) throw new Error('Failed to calculate cost');
     const data = await res.json();
-    document.getElementById('totalCost').value = data.data;
+    document.getElementById('totalCost').value = data.data.Cost;
+    document.getElementById('gst').value = data.data.Tax;
   } catch (err) {
     showNotification('Error: ' + err.message, 'error');
   } finally{

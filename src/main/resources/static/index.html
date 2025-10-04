@@ -158,7 +158,7 @@
         </svg>
         <span>View stock details</span>
       </button>
-      <!-- <button class="action-btn" id="btnInvoice" aria-label="Generate Invoice">
+      <button class="action-btn" id="btnInvoice" aria-label="Generate Invoice">
       
         <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="7" y="7" width="18" height="22" rx="4"/>
@@ -166,7 +166,7 @@
           <circle cx="14" cy="27" r="1"/>
         </svg>
         <span>Generate invoice</span>
-      </button> -->
+      </button>
        <button class="action-btn" id="btnViewInvoices" aria-label="View Invoices">
             <!-- SVG: Document List -->
             <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -189,9 +189,9 @@
     document.getElementById('btnViewStock').addEventListener('click', () => {
       window.location.href = 'stocks.html';
     });
-    // document.getElementById('btnInvoice').addEventListener('click', () => {
-    //   window.location.href = 'invoice.html';
-    // });
+    document.getElementById('btnInvoice').addEventListener('click', () => {
+      window.location.href = 'invoice.html';
+    });
     document.getElementById('btnViewParty').addEventListener('click', () => {
       window.location.href = 'viewParties.html';
     });

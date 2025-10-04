@@ -233,7 +233,7 @@ async function loadStocks() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${stock.itemId}</td>
-                <td>${stock.itemName}</td>
+                <td><input class="stock-input" value="${stock.itemName}" data-field="name"></td>
                 <td><input class="stock-input" value="${stock.unit}" data-field="unit"></td>
                 <td><input class="stock-input" type="number" step="1" value="${stock.price}" data-field="price"></td>
                 <td><input class="stock-input" type="number" step="1" value="${stock.gst}" data-field="gst"></td>
@@ -265,7 +265,7 @@ async function loadStocks() {
 
                 const updatedStock = {
                     itemId: stock.itemId,  // must be included
-                    itemName: stock.itemName,
+                    itemName:  tr.querySelector('input[data-field="name"]').value,
                     unit: tr.querySelector('input[data-field="unit"]').value,
                     price: parseFloat(tr.querySelector('input[data-field="price"]').value),
                     gst: parseFloat(tr.querySelector('input[data-field="gst"]').value)

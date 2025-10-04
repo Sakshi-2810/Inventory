@@ -210,7 +210,7 @@
 
     <table id="stockTable">
       <thead>
-        <tr><th>Stock Name</th><th>Quantity</th><th>Unit</th><th>Price</th><th>GST (%)</th><th></th></tr>
+        <tr><th>S.No.</th><th>Stock Name</th><th>Quantity</th><th>Unit</th><th>Price</th><th>GST (%)</th><th></th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -220,6 +220,7 @@
 
     <div class="form-row">
       <div><label>Total Cost</label><input id="totalCost" type="text" readonly></div>
+      <div><label>GST</label><input id="gst" type="text" readonly></div>
       <div><label>Additional Discount</label><input id="additionalDiscount" type="number" min="0"></div>
       <div><label>Amount Paid</label><input id="paidAmount" type="number" min="0"></div>
     </div>
@@ -299,7 +300,8 @@ function confirmGST() {
     transactionType: document.getElementById('transactionType'),
     totalCost: document.getElementById('totalCost'),
     additionalDiscount: document.getElementById('additionalDiscount'),
-    paidAmount: document.getElementById('paidAmount')
+    paidAmount: document.getElementById('paidAmount'),
+    gst: document.getElementById('gst')
   };
   
   let invoiceData = null;
@@ -318,14 +320,18 @@ function confirmGST() {
       invoiceFields.partyName.value = invoiceData.partyName;
       invoiceFields.transactionType.value = invoiceData.transactionType;
       invoiceFields.totalCost.value = invoiceData.totalCost || 0;
+      invoiceFields.gst.value = invoiceData.tax || 0;
       invoiceFields.additionalDiscount.value = invoiceData.additionalDiscount || 0;
       invoiceFields.paidAmount.value = invoiceData.paidAmount || 0;
 
       tbody.innerHTML = '';
       (invoiceData.stockBills || []).forEach(s => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td><input type="text" value="${s.itemName}"></td>
-                         <td><input type="number" value="${s.quantity}"></td>
+         const rowCount = tbody.rows.length + 1;
+        row.innerHTML = `
+                        <td>${rowCount}</td>
+                        <td><input type="text" value="${s.itemName}"></td>
+                         <td><input type="number" value="${s.quantity.toFixed(3)}"></td>
                          <td><input type="text" value="${s.unit}"></td>
                          <td><input type="number" value="${s.price}"></td>
                          <td><input type="number" value="${s.gst}"></td>
@@ -347,11 +353,11 @@ function confirmGST() {
 
     const rows = Array.from(tbody.querySelectorAll('tr'));
     const stockBills = rows.map(r => ({
-      itemName: r.cells[0].querySelector('input').value.trim(),
-      quantity: Number(r.cells[1].querySelector('input').value || 0),
-      unit: r.cells[2].querySelector('input').value.trim(),
-      price: Number(r.cells[3].querySelector('input').value || 0),
-      gst: Number(r.cells[4].querySelector('input').value || 0)
+      itemName: r.cells[1].querySelector('input').value.trim(),
+      quantity: Number(r.cells[2].querySelector('input').value || 0),
+      unit: r.cells[3].querySelector('input').value.trim(),
+      price: Number(r.cells[4].querySelector('input').value || 0),
+      gst: Number(r.cells[5].querySelector('input').value || 0)
     }));
 
     const payload = { ...invoiceData,
@@ -493,11 +499,11 @@ async function deleteCurrentInvoice(button) {
  const spinner = button.querySelector(".spinner");
   const text = button.querySelector(".btn-text");
 
+  if (!confirm(`Are you sure you want to delete Invoice #${invoiceId}?`)) return;
+
   // Show loader
   text.style.display = "none";
   spinner.style.display = "inline-block";
-
-  if (!confirm(`Are you sure you want to delete Invoice #${invoiceId}?`)) return;
 
   try {
     const res = await fetch(`/invoice/delete?invoiceId=${invoiceId}`, {

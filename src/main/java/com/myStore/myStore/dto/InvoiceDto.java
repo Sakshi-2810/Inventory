@@ -28,4 +28,6 @@ public class InvoiceDto {
     private Integer paidAmount = 0;
     private Integer dueAmount;
     private Integer additionalDiscount = 0;
+    private double subTotal = 0;
+    private double tax = 0;
 }

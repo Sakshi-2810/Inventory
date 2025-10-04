@@ -44,8 +44,7 @@ public class InvoiceController {
 
     @PostMapping(produces = "application/json", value = "/calculate/cost" )
     public ResponseEntity<Response> calculateCost(@RequestBody Invoice invoice) {
-        Integer cost = invoiceService.calculateTotalCost(invoice.getStockBills()) - invoice.getAdditionalDiscount();
-        return ResponseEntity.ok(new Response(cost, "Total cost calculated successfully"));
+        return ResponseEntity.ok(invoiceService.calcCostInJson(invoice));
     }
 
     @GetMapping(produces = "application/json", value = "/invoice" )
