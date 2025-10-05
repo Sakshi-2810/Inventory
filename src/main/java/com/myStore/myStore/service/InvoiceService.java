@@ -35,6 +35,8 @@ public class InvoiceService {
     private PartyService partyService;
     @Autowired
     private ModelMapper modelMapper;
+    @Autowired
+    private StockDetailService stockDetailService;
 
     public Integer generateNewInvoiceId() {
         Integer maxId = Optional.ofNullable(invoiceRepository.findTopByOrderByInvoiceIdDesc()).map(Invoice::getInvoiceId).orElse(0);
@@ -74,6 +76,7 @@ public class InvoiceService {
         }
 
         invoiceRepository.save(invoice);
+        stockDetailService.saveStocks(invoice.getStockBills());
         return new Response(invoice.getInvoiceId(), "Invoice saved successfully");
     }
 
@@ -118,7 +121,7 @@ public class InvoiceService {
     public void downloadInvoice(Integer invoiceId, HttpServletResponse response, String gstDetails) throws IOException {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElse(null);
         if (gstDetails.isBlank()) {
-            gstDetails = "<h3>M/s Chhitarmal Motilal</h3>14 M.G. Road Shujalpur Mandi<br>9425921009<br>GSTIN: 23AFKPA6567R1ZW<br>FSSAI Licence No. 11420830000041<br>Maan No. 2110069<br>Email: deepakagrawalsjp@gmail.com";
+            gstDetails = "<h3>Deepak Agrawal</h3>9425921009,7000347100";
         } else {
             gstDetails = "<h3>" + gstDetails + "</h3>";
         }
@@ -132,6 +135,7 @@ public class InvoiceService {
         htmlContent = htmlContent.replace("{{invoiceDate}}", invoice.getDate());
         htmlContent = htmlContent.replace("{{partyName}}", invoice.getPartyName());
         htmlContent = htmlContent.replace("{{firm}}", gstDetails);
+        htmlContent = htmlContent.replace("{{Paid}}", String.valueOf(invoice.getPaidAmount()));
 
         Party party = partyRepository.findByName(invoice.getPartyName());
 
@@ -140,8 +144,8 @@ public class InvoiceService {
         htmlContent = htmlContent.replace("{{partyGSTIN}}", party.getGstin() == null ? "" : party.getGstin());
         htmlContent = htmlContent.replace("{{Total}}", String.valueOf(invoice.getTotalCost()));
         htmlContent = htmlContent.replace("{{subtotal}}", String.valueOf(invoice.getSubTotal()));
-        htmlContent = htmlContent.replace("{{Tax}}", String.valueOf((invoice.getTax()) / 2.0));
-        htmlContent = htmlContent.replace("{{Discount}}", invoice.getAdditionalDiscount());
+        htmlContent = htmlContent.replace("{{Tax}}", String.format("%.2f", (invoice.getTax()) / 2.0));
+        htmlContent = htmlContent.replace("{{Discount}}", invoice.getAdditionalDiscount().contains("%") ? invoice.getAdditionalDiscount() : (invoice.getAdditionalDiscount().isBlank() ? "₹ 0" : ("₹ " + invoice.getAdditionalDiscount())));
 
         StringBuilder itemsRows = new StringBuilder();
         int index = 0;
@@ -153,7 +157,7 @@ public class InvoiceService {
 
         // Set response headers for file download
         response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "attachment; filename=invoice.pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=invoice_"+invoice.getPartyName()+".pdf");
 
         try (OutputStream out = response.getOutputStream()) {
             HtmlConverter.convertToPdf(htmlContent, out);

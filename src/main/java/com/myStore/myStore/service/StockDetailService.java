@@ -2,11 +2,13 @@ package com.myStore.myStore.service;
 
 import com.myStore.myStore.exception.CustomDataException;
 import com.myStore.myStore.model.Response;
+import com.myStore.myStore.model.StockBill;
 import com.myStore.myStore.model.StockDetail;
 import com.myStore.myStore.repository.StockDetailRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -44,5 +46,22 @@ public class StockDetailService {
         }
         stockDetailRepository.deleteById(itemId);
         return new Response(itemId, "Stock detail deleted successfully");
+    }
+
+    public void saveStocks(List<StockBill> stockBills) {
+        List<String> existingStocks = stockDetailRepository.findItemNameByItemNameIn(stockBills.stream().map(StockBill::getItemName).toList()).stream().map(StockDetail::getItemName).toList();
+        List<StockDetail> newStocks = stockBills.stream().filter(stockBill -> !existingStocks.contains(stockBill.getItemName())).map(stockBill -> {
+            StockDetail stockDetail = new StockDetail();
+            stockDetail.setItemId(generateNewStockDetailId());
+            stockDetail.setItemName(stockBill.getItemName());
+            stockDetail.setPrice(stockBill.getPrice());
+            stockDetail.setGst(stockBill.getGst());
+            stockDetail.setUnit(stockBill.getUnit());
+            return stockDetail;
+        }).toList();
+        if (newStocks.isEmpty()) {
+            return;
+        }
+        stockDetailRepository.saveAll(newStocks);
     }
 }

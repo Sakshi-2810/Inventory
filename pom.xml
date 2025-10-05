@@ -14,18 +14,6 @@
 	<name>myStore</name>
 	<description>Invoice manager</description>
 	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
 	<properties>
 		<java.version>17</java.version>
 		<spring-ai.version>1.0.2</spring-ai.version>
