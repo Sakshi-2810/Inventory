@@ -47,7 +47,7 @@ public class PartyService {
             partyDto.setInvoices(invoices.getOrDefault(party.getName(), new ArrayList<>()));
             return partyDto;
         }).toList();
-
+        log.info("Fetched {} parties", partyDtos.size());
         return new Response(partyDtos, "All parties fetched successfully");
     }
 
@@ -65,6 +65,7 @@ public class PartyService {
             party.setAmountAdded(existingParty.getAmountAdded() + party.getAmountAdded());
         }
         partyRepository.save(party);
+        log.info("Party saved with ID: {}", party.getPartyId());
         return new Response(party.getPartyId(), "Party saved successfully");
     }
 
@@ -77,6 +78,7 @@ public class PartyService {
         }
         invoiceRepository.deleteByPartyName(partyRepository.findById(partyId).get().getName());
         partyRepository.deleteById(partyId);
+        log.info("Party deleted with ID: {}", partyId);
         return new Response(partyId, "Party deleted successfully");
     }
 
@@ -95,7 +97,7 @@ public class PartyService {
         }).reduce(0, Integer::sum);
 
         partyDto.setTotalDue(totalDue);
-
+        log.info("Fetched party with name: {}", name);
         return new Response(partyDto, "Party fetched successfully");
     }
 }

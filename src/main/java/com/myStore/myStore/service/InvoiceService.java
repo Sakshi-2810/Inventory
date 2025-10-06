@@ -77,6 +77,7 @@ public class InvoiceService {
 
         invoiceRepository.save(invoice);
         stockDetailService.saveStocks(invoice.getStockBills());
+        log.info("Invoice saved/updated with ID: {}", invoice.getInvoiceId());
         return new Response(invoice.getInvoiceId(), "Invoice saved successfully");
     }
 
@@ -110,11 +111,13 @@ public class InvoiceService {
             throw new CustomDataException("Invoice does not exist");
         }
         InvoiceDto invoiceDto = modelMapper.map(invoice, InvoiceDto.class);
+        log.info("Fetched invoice with ID: {}", invoiceId);
         return new Response(invoiceDto, "Invoice fetched successfully");
     }
 
     public Response getInvoicesByPartyName(String partyName) {
         List<Invoice> invoices = invoiceRepository.findByPartyName(partyName);
+        log.info("Fetched {} invoices for party: {}", invoices.size(), partyName);
         return new Response(invoices, "Invoices fetched successfully");
     }
 
@@ -170,10 +173,12 @@ public class InvoiceService {
             throw new CustomDataException("Invoice does not exist");
         }
         invoiceRepository.deleteById(invoiceId);
+        log.info("Deleted invoice with ID: {}", invoiceId);
         return new Response(invoiceId, "Invoice deleted successfully");
     }
 
     public Response getAllInvoices() {
+        log.info("Fetching all invoices");
         return new Response(invoiceRepository.findAll(), "All invoices fetched successfully");
     }
 }

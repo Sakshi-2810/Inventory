@@ -5,12 +5,14 @@ import com.myStore.myStore.model.Response;
 import com.myStore.myStore.model.StockBill;
 import com.myStore.myStore.model.StockDetail;
 import com.myStore.myStore.repository.StockDetailRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class StockDetailService {
 
@@ -25,6 +27,7 @@ public class StockDetailService {
     public Response saveStockDetail(StockDetail stockDetail) {
         stockDetail.setItemId(generateNewStockDetailId());
         stockDetailRepository.save(stockDetail);
+        log.info("Saved new stock detail: {}", stockDetail);
         return new Response(stockDetail.getItemId(), "Stock detail saved successfully");
     }
 
@@ -33,10 +36,12 @@ public class StockDetailService {
             throw new CustomDataException("Stock detail does not exist");
         }
         stockDetailRepository.save(stockDetail);
+        log.info("Updated stock detail: {}", stockDetail);
         return new Response(stockDetail.getItemId(), "Stock detail updated successfully");
     }
 
     public Response getAllStockDetails() {
+        log.info("Fetching all stock details");
         return new Response(stockDetailRepository.findAll(), "All stock details fetched successfully");
     }
 
@@ -45,6 +50,7 @@ public class StockDetailService {
             throw new CustomDataException("Stock detail does not exist");
         }
         stockDetailRepository.deleteById(itemId);
+        log.info("Deleted stock detail with itemId: {}", itemId);
         return new Response(itemId, "Stock detail deleted successfully");
     }
 
@@ -62,6 +68,7 @@ public class StockDetailService {
         if (newStocks.isEmpty()) {
             return;
         }
+        log.info("Saving new stocks: {}", newStocks);
         stockDetailRepository.saveAll(newStocks);
     }
 }
