@@ -178,6 +178,23 @@
   margin-top: 4px;
   font-style: italic;
 }
+ #stockTable {
+    width: 100%;
+    table-layout: auto; /* allows auto width based on content */
+  }
+
+  #stockTable th, #stockTable td {
+    /* border: 1px solid #ccc; */
+    padding: 8px;
+    text-align: left;
+    /*white-space: nowrap;  prevents wrapping */
+  }
+
+  /* Optional: give other columns fixed width if needed */
+  /* #stockTable th:nth-child(2), */
+  #stockTable td:nth-child(2) {
+    width: 30%; 
+  }
   </style>
 </head>
 <body>
@@ -338,7 +355,7 @@ function confirmGST() {
          const rowCount = tbody.rows.length + 1;
         row.innerHTML = `
                         <td>${rowCount}</td>
-                        <td><input type="text" value="${s.itemName}"></td>
+                        <td><input type="text" list="stockOptions" class="stockInput" value="${s.itemName}"></td>
                          <td><input type="number" value="${s.quantity.toFixed(3)}"></td>
                          <td><input type="text" value="${s.unit}"></td>
                          <td><input type="number" value="${s.price}"></td>

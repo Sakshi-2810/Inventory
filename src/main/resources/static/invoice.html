@@ -213,7 +213,23 @@
   from { transform: translate(-50%, -50px); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
 }
+ #stockTable {
+    width: 100%;
+    table-layout: auto; /* allows auto width based on content */
+  }
 
+  #stockTable th, #stockTable td {
+    /* border: 1px solid #ccc; */
+    padding: 8px;
+    text-align: left;
+    /*white-space: nowrap;  prevents wrapping */
+  }
+
+  /* Optional: give other columns fixed width if needed */
+  /* #stockTable th:nth-child(2), */
+  #stockTable td:nth-child(2) {
+    width: 30%;
+  }
     </style>
 </head>
 <body>
