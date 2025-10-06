@@ -17,7 +17,7 @@ public class SchedulerUtils {
         String url = "https://inventory-dw1f.onrender.com/actuator/health";
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-            log.info("Health API Response: " + response.getBody());
+//            log.info("Health API Response: " + response.getBody());
         } catch (Exception ex) {
             log.info("Error calling health API: " + ex.getMessage());
         }
