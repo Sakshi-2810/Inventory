@@ -1,200 +1,141 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <title>Invoice</title>
   <style>
-  body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 13px;
-  color: #333;
-  margin: 0;
-  padding: 20px;
-}
+    body { font-family: Arial, sans-serif; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 6px; }
+    th { background-color: #660DA7; color: #fff; text-align: center; }
+    td { text-align: right; }
+    .left { text-align: left; }
+    .totals-table th, .totals-table td { text-align: right; }
 
-.invoice-box {
-  max-width: 700px;
-  margin: auto;
-  padding: 30px;
-  border: 1px solid #ddd;
-  background: #fff;
-  box-shadow: none;
-}
 
-.invoice-header {
+    .invoice-info {
+      text-align: left;
+      font-size: 13px;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    .invoice-info h2 {
+      margin: 0;
+      color: #000;
+    }
+
+    .invoice-header {
   display: flex;
+  justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 2px solid #660DA7;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
+<!--  border-bottom: 2px solid #660DA7;-->
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  position: relative;
 }
-
-.invoice-header > div:first-child {
-  flex-grow: 1;
-}
-
-.invoice-header > div:last-child {
-  text-align: right;
-  min-width: 250px; /* fixed or minimum width for right side */
-  font-size: 12px;
-  color: #666;
-  line-height: 1.4;
-}
-
 
 .company-details {
-  font-size: 12px;
+  position: absolute;
+  top: 10px;   /* adjust as needed */
+  right: 0;
   text-align: right;
-  color: #666;
+  font-size: 12px;
+  color: #555;
   line-height: 1.4;
 }
 
-.invoice-details table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
 
-.invoice-details th, .invoice-details td {
-  border: 1px solid #ddd;
-  padding: 8px 10px;
-  font-size: 13px;
-  vertical-align: middle;
-}
+    .company-details h4 {
+      color: #660DA7;
+      margin: 0;
+      font-size: 14px;
+    }
 
-.invoice-details th {
-  background-color: #660DA7;
-  color: white;
-  font-weight: 600;
-  text-align: left;
-}
-
-.invoice-details tbody tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.invoice-details td:nth-child(2) {
-  width: 30%;
-  text-align: left;
-}
-
-.invoice-details td:nth-child(1),
-.invoice-details td:nth-child(3),
-.invoice-details td:nth-child(4),
-.invoice-details td:nth-child(5),
-.invoice-details td:nth-child(6) {
-  width: 10%;
-  text-align: center;
-}
-
-.invoice-details td:nth-child(7) {
-  width: 20%;
-  text-align: right;
-}
-
-.totals {
-  margin-top: 30px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.totals table {
-  border-collapse: collapse;
-  min-width: 250px;
-}
-
-.totals td {
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-.totals td:first-child {
-  font-weight: 600;
-  color: #333;
-  text-align: left;
-}
-
-.totals td:last-child {
-  text-align: right;
-  font-weight: 600;
-  color: #660DA7;
-}
-
-</style>
+    hr {
+      border: none;
+      border-top: 2px solid #660DA7;
+      margin: 15px 0;
+    }
+  </style>
 </head>
 <body>
-  <div class="invoice-box">
-    <div class="invoice-header">
-      <div>
-        <h2>Invoice</h2>
-        <p>Invoice #: <span id="invoiceId">{{invoiceId}}</span></p>
-        <p>Date: <span id="invoiceDate">{{invoiceDate}}</span></p>
-      </div>
-      <div class="company-details">
-        <p>
-          {{firm}}
-        </p>
-      </div>
-    </div>
 
-    <div>
-      <h4>Billed To:</h4>
-      <p>
-        {{partyName}}<br>
-        {{partyAddress}}<br>
-        {{partyPhone}}<br>
-        GSTIN: {{partyGSTIN}}
-      </p>
-    </div>
-
-    <div class="invoice-details">
-      <table>
-        <thead>
-          <tr>
-            <th>S.No.</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Unit</th>
-            <th>Price</th>
-            <th>GST %</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody id="invoiceItems">
-          {{invoiceItems}}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="totals">
-      <table>
-        <tr>
-          <td><b>Subtotal</b></td>
-          <td>₹<span>{{subtotal}}</span></td>
-        </tr>
-        <tr>
-          <td><b>CGST</b></td>
-          <td>₹<span>{{Tax}}</span></td>
-        </tr>
-        <tr>
-          <td><b>SGST</b></td>
-          <td>₹<span>{{Tax}}</span></td>
-        </tr>
-        <tr>
-          <td><b>Discounts</b></td>
-          <td><b><span>{{Discount}}</span></b></td>
-        </tr>
-        <tr>
-          <td><b>Total</b></td>
-          <td><b>₹<span id="grandTotal">{{Total}}</span></b></td>
-        </tr>
-        <tr>
-          <td><b>Paid</b></td>
-          <td><b>₹<span>{{Paid}}</span></b></td>
-        </tr>
-      </table>
-    </div>
-
+<div class="invoice-header">
+  <div class="invoice-info">
+    <h2 style="text-align:center;">Invoice #<span th:text="${invoice.invoiceId}"></span></h2>
+    <p><strong>Date:</strong> <span th:text="${invoice.date}"></span></p>
   </div>
+
+  <div class="company-details">
+    <h4>Firm Details</h4>
+    <p th:utext="${gstDetails}"></p>
+  </div>
+
+</div>
+
+<h3 th:text="|Billed to: ${invoice.partyName}|"
+    th:if="${invoice.partyName != null and invoice.partyName != ''}"></h3>
+<p>
+  <span th:if="${partyAddress != null and partyAddress != ''}"
+        th:text="${partyAddress}"></span><br th:if="${partyAddress != null and partyAddress != ''}">
+  <span th:if="${partyPhone != null and partyPhone != ''}">
+    Phone: <span th:text="${partyPhone}"></span><br>
+  </span>
+  <span th:if="${partyGstin != null and partyGstin != ''}">
+    GSTIN: <span th:text="${partyGstin}"></span>
+  </span>
+</p>
+
+
+<hr>
+
+<table>
+  <thead>
+  <tr>
+    <th>S.No</th>
+    <th class="left">Item Name</th>
+    <th>Qty</th>
+    <th class="left">Unit</th>
+    <th>Price</th>
+    <th>GST (%)</th>
+    <th>Total</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="bill, iterStat : ${invoice.stockBills}">
+    <td th:text="${iterStat.index + 1}"></td>
+    <td class="left" th:text="${bill.itemName}"></td>
+    <td th:text="${#numbers.formatDecimal(bill.quantity, 0, 3)}"></td>
+    <td class="left" th:text="${bill.unit}"></td>
+    <td th:text="${bill.price}"></td>
+    <td th:text="${bill.gst}"></td>
+    <td th:text="${T(java.lang.Math).round((bill.quantity * bill.price) * (100 + bill.gst) / 100)}"></td>
+  </tr>
+  </tbody>
+</table>
+
+<table class="totals-table">
+  <thead>
+  <tr>
+    <th>Subtotal</th>
+    <th>CGST</th>
+    <th>SGST</th>
+    <th>Discount</th>
+    <th>Total</th>
+    <th>Paid</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+    <td>₹ <span th:text="${invoice.subTotal}"></span></td>
+    <td>₹ <span th:text="${halfTax}"></span></td>
+    <td>₹ <span th:text="${halfTax}"></span></td>
+    <td><span th:text="${formattedDiscount}"></span></td>
+    <td style="font-weight:700;color:#660DA7;">₹ <span th:text="${invoice.totalCost}"></span></td>
+    <td>₹ <span th:text="${invoice.paidAmount}"></span></td>
+  </tr>
+  </tbody>
+</table>
 </body>
 </html>

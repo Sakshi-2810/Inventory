@@ -133,7 +133,7 @@
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-dark); }
     .btn-danger { background: var(--danger); color: #fff; }
-    .btn-back, .btn-home { background: var(--gray); color: var(--primary-dark); }
+    .btn-back, .btn-home , .btn-scroll{ background: var(--gray); color: var(--primary-dark); }
     .spinner { width: 48px; height: 48px; border: 6px solid #e2e8f7; border-top: 6px solid #1967d2; border-radius: 50%; animation: spin 0.77s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     #loaderOverlay { opacity: 1; pointer-events: all; }
@@ -195,6 +195,7 @@
   #stockTable td:nth-child(2) {
     width: 30%; 
   }
+
   </style>
 </head>
 <body>
@@ -216,6 +217,7 @@
     <button class="btn btn-home" onclick="goHome()">🏠 Home</button>
     <button class="btn btn-back" onclick="goBack()">← Back</button>
     <h2>Invoice #<span id="invoiceId"></span></h2>
+    <button class="btn btn-scroll" onclick="scrollToBottom()">⬇️ Scroll Down</button>
   </div>
 
   <div class="subtitle">
@@ -555,6 +557,12 @@ async function deleteCurrentInvoice(button) {
     text.style.display = "inline";
     spinner.style.display = "none";
   }
+}
+function scrollToBottom() {
+  window.scrollTo({
+    top: document.body.scrollHeight,
+    behavior: "smooth"
+  });
 }
 
 </script>

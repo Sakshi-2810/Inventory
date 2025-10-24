@@ -15,11 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +37,8 @@ public class InvoiceService {
     private ModelMapper modelMapper;
     @Autowired
     private StockDetailService stockDetailService;
+    @Autowired
+    private SpringTemplateEngine templateEngine;
 
     public Integer generateNewInvoiceId() {
         Integer maxId = Optional.ofNullable(invoiceRepository.findTopByOrderByInvoiceIdDesc()).map(Invoice::getInvoiceId).orElse(0);
@@ -122,50 +124,46 @@ public class InvoiceService {
     }
 
     public void downloadInvoice(Integer invoiceId, HttpServletResponse response, String gstDetails) throws IOException {
-        Invoice invoice = invoiceRepository.findById(invoiceId).orElse(null);
-        if (gstDetails.isBlank()) {
-            gstDetails = "<h3>Deepak Agrawal</h3>9425921009,7000347100";
-        } else {
-            gstDetails = "<h3>" + gstDetails + "</h3>";
-        }
-        if (invoice == null) {
-            throw new CustomDataException("Invoice does not exist");
-        }
-        InputStream inputStream = getClass().getResourceAsStream("/templates/templateInvoice.html");
-        String htmlContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new CustomDataException("Invoice does not exist"));
 
-        htmlContent = htmlContent.replace("{{invoiceId}}", invoiceId.toString());
-        htmlContent = htmlContent.replace("{{invoiceDate}}", invoice.getDate());
-        htmlContent = htmlContent.replace("{{partyName}}", invoice.getPartyName());
-        htmlContent = htmlContent.replace("{{firm}}", gstDetails);
-        htmlContent = htmlContent.replace("{{Paid}}", String.valueOf(invoice.getPaidAmount()));
+        // Default GST details
+        gstDetails = (gstDetails == null || gstDetails.isBlank()) ? "Deepak Agrawal<br>9425921009,7000347100" : gstDetails.replace("\n", "<br>");
 
         Party party = partyRepository.findByName(invoice.getPartyName());
+        String partyAddress = (party != null && party.getAddress() != null) ? party.getAddress() : "";
+        String partyPhone = (party != null && party.getPhoneNumber() != null) ? party.getPhoneNumber() : "";
+        String partyGstin = (party != null && party.getGstin() != null) ? party.getGstin() : "";
 
-        htmlContent = htmlContent.replace("{{partyAddress}}", party.getAddress() == null ? "" : party.getAddress());
-        htmlContent = htmlContent.replace("{{partyPhone}}", party.getPhoneNumber() == null ? "" : party.getPhoneNumber());
-        htmlContent = htmlContent.replace("{{partyGSTIN}}", party.getGstin() == null ? "" : party.getGstin());
-        htmlContent = htmlContent.replace("{{Total}}", String.valueOf(invoice.getTotalCost()));
-        htmlContent = htmlContent.replace("{{subtotal}}", String.valueOf(invoice.getSubTotal()));
-        htmlContent = htmlContent.replace("{{Tax}}", String.format("%.2f", (invoice.getTax()) / 2.0));
-        htmlContent = htmlContent.replace("{{Discount}}", invoice.getAdditionalDiscount().contains("%") ? invoice.getAdditionalDiscount() : (invoice.getAdditionalDiscount().isBlank() ? "₹ 0" : ("₹ " + invoice.getAdditionalDiscount())));
+        // Prepare Thymeleaf context
+        Context context = new Context();
+        context.setVariable("invoice", invoice);
+        context.setVariable("gstDetails", gstDetails);
+        context.setVariable("partyAddress", partyAddress);
+        context.setVariable("partyPhone", partyPhone);
+        context.setVariable("partyGstin", partyGstin);
+        context.setVariable("halfTax", String.format("%.2f", invoice.getTax() / 2.0));
+        context.setVariable("formattedDiscount", formatDiscount(invoice.getAdditionalDiscount()));
 
-        StringBuilder itemsRows = new StringBuilder();
-        int index = 0;
-        for (StockBill partBill : invoice.getStockBills()) {
-            Integer totalPrice = (int) Math.round((partBill.getQuantity() * partBill.getPrice()) * (100.0 + partBill.getGst()) / 100.0);
-            itemsRows.append("<tr>").append("<td style='padding:8px; border:1px solid #ddd;'>").append(++index).append("</td>").append("<td style='padding:8px; border:1px solid #ddd;'>").append(partBill.getItemName()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(String.format("%.3f", partBill.getQuantity())).append("</td>").append("<td style='text-align:left;padding:8px; border:1px solid #ddd;'>").append(partBill.getUnit()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(partBill.getPrice()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(partBill.getGst()).append("</td>").append("<td style='text-align:right;padding:8px; border:1px solid #ddd;'>").append(totalPrice).append("</td>").append("</tr>");
-        }
-        htmlContent = htmlContent.replace("{{invoiceItems}}", itemsRows.toString());
+        // Render HTML using Thymeleaf
+        String htmlContent = templateEngine.process("templateInvoice", context);
 
-        // Set response headers for file download
+        // Set response headers
         response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "attachment; filename=invoice_"+invoice.getPartyName()+".pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=invoice_" + invoice.getPartyName().replaceAll("\\s+", "_") + ".pdf");
 
+        // Generate PDF
         try (OutputStream out = response.getOutputStream()) {
             HtmlConverter.convertToPdf(htmlContent, out);
-            log.info("PDF generated and sent to client for invoice: {}", invoiceId);
+            log.info("✅ PDF generated and sent to client for invoice ID: {}", invoiceId);
         }
+    }
+
+    /**
+     * Formats discount field gracefully.
+     */
+    private String formatDiscount(String discount) {
+        if (discount == null || discount.isBlank()) return "₹ 0";
+        return discount.contains("%") ? discount : "₹ " + discount;
     }
 
     public Response deleteInvoice(Integer invoiceId) {
