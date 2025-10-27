@@ -1,6 +1,5 @@
 package com.myStore.myStore.service;
 
-import com.itextpdf.html2pdf.HtmlConverter;
 import com.myStore.myStore.dto.InvoiceDto;
 import com.myStore.myStore.exception.CustomDataException;
 import com.myStore.myStore.model.Invoice;
@@ -12,11 +11,14 @@ import com.myStore.myStore.repository.PartyRepository;
 import com.myStore.myStore.utils.DateUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -126,7 +128,6 @@ public class InvoiceService {
     public void downloadInvoice(Integer invoiceId, HttpServletResponse response, String gstDetails) throws IOException {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new CustomDataException("Invoice does not exist"));
 
-        // Default GST details
         gstDetails = (gstDetails == null || gstDetails.isBlank()) ? "Deepak Agrawal<br>9425921009,7000347100" : gstDetails.replace("\n", "<br>");
 
         Party party = partyRepository.findByName(invoice.getPartyName());
@@ -134,7 +135,6 @@ public class InvoiceService {
         String partyPhone = (party != null && party.getPhoneNumber() != null) ? party.getPhoneNumber() : "";
         String partyGstin = (party != null && party.getGstin() != null) ? party.getGstin() : "";
 
-        // Prepare Thymeleaf context
         Context context = new Context();
         context.setVariable("invoice", invoice);
         context.setVariable("gstDetails", gstDetails);
@@ -144,17 +144,22 @@ public class InvoiceService {
         context.setVariable("halfTax", String.format("%.2f", invoice.getTax() / 2.0));
         context.setVariable("formattedDiscount", formatDiscount(invoice.getAdditionalDiscount()));
 
-        // Render HTML using Thymeleaf
         String htmlContent = templateEngine.process("templateInvoice", context);
 
-        // Set response headers
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=invoice_" + invoice.getPartyName().replaceAll("\\s+", "_") + ".pdf");
 
-        // Generate PDF
-        try (OutputStream out = response.getOutputStream()) {
-            HtmlConverter.convertToPdf(htmlContent, out);
-            log.info("✅ PDF generated and sent to client for invoice ID: {}", invoiceId);
+        try (OutputStream os = response.getOutputStream()) {
+            String xhtml = Jsoup.parse(htmlContent, "UTF-8")
+                    .outputSettings(new Document.OutputSettings().syntax(Document.OutputSettings.Syntax.xml))
+                    .outerHtml();
+
+            ITextRenderer renderer = new ITextRenderer();
+            renderer.setDocumentFromString(xhtml);
+            renderer.layout();
+            renderer.createPDF(os);
+            os.flush();
+            log.info("✅ PDF generated and sent for invoice ID: {}", invoiceId);
         }
     }
 
