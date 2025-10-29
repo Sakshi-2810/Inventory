@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>"/>
   <title>View Invoice</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -116,8 +118,8 @@
 
         button:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
     body { font-family: var(--font-main); background: var(--bg); margin: 0; min-height: 100vh; padding: 0; }
-    .container { max-width: 680px; margin: 38px auto; background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px 30px 24px 30px; }
-    .header-row { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; }
+    .container { max-width: 100%; margin: 38px auto; background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px 30px 24px 30px; }
+    .header-row { display: flex; align-items: center; gap: 18px; margin-bottom: 16px;   justify-content: space-between; }
     h2 { margin: 0 0 5px 0; color: var(--primary-dark); font-weight: 600; font-size: 2em; }
     .subtitle { color: #8895b3; font-size: 1.1em; margin-bottom: 20px; }
     label { font-weight: 600; color: #222b45; margin: 9px 0 5px 2px; display: block; }
@@ -215,7 +217,6 @@
 
   <div class="header-row">
     <button class="btn btn-home" onclick="goHome()">🏠 Home</button>
-    <button class="btn btn-back" onclick="goBack()">← Back</button>
     <h2>Invoice #<span id="invoiceId"></span></h2>
     <button class="btn btn-scroll" onclick="scrollToBottom()">⬇️ Scroll Down</button>
   </div>

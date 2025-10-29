@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>View Stocks</title>
+    <link rel="icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="18" fill="%23345"/><text x="50" y="57" font-size="48" text-anchor="middle" fill="white" font-family="Arial, Helvetica, sans-serif">S</text></svg>'>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -70,14 +71,19 @@ body {
     padding: 0;
 }
 .container {
-    max-width: 900px;
+    max-width: 100%;
     margin: 40px auto;
     background: var(--card-bg);
     border-radius: 18px;
     box-shadow: var(--shadow);
     padding: 32px;
 }
-h2 { color: var(--primary-dark); font-weight: 600; letter-spacing: 0.03em; }
+ .header-row { display: flex; align-items: center; gap: 18px; margin-bottom: 16px;   justify-content: space-between;}
+   
+h2 {
+      margin-bottom: 20px;
+      color: #2563eb;
+    }
 table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card-bg); }
 th, td { padding: 14px 12px; text-align: left; }
 th { background: var(--table-header); font-weight: 600; border-bottom: 2px solid #e9eef4; }
@@ -145,12 +151,13 @@ input.inline-edit:focus { border-color: var(--primary); outline: none; }
 
 <div class="container">
     
-    <div style="margin-bottom:12px;">
+    <div class="header-row">
         <button class="btn btn-home" onclick="goHome()">🏠 Home</button>
+        <h2>Stocks</h2>
         <button class="btn btn-primary" onclick="openAddModal()">➕ Add Stock</button>
     </div>
 
-    <h2>Stocks</h2>
+    
      <div class="search-bar" style="margin-bottom:18px;">
         <input type="text" id="stockSearchInput" placeholder="Search stocks..." style="
         font-size:16px;
