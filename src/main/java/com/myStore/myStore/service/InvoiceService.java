@@ -11,6 +11,7 @@ import com.myStore.myStore.repository.PartyRepository;
 import com.myStore.myStore.utils.DateUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.modelmapper.ModelMapper;
@@ -128,6 +129,30 @@ public class InvoiceService {
     public void downloadInvoice(Integer invoiceId, HttpServletResponse response, String gstDetails) throws IOException {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new CustomDataException("Invoice does not exist"));
 
+        String htmlContent = getHtmlContent(gstDetails, invoice);
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=invoice_" + invoice.getPartyName().replaceAll("\\s+", "_") + ".pdf");
+
+        try (OutputStream os = response.getOutputStream()) {
+            renderPdf(htmlContent, os);
+            os.flush();
+            log.info("✅ PDF generated and sent for invoice ID: {}", invoiceId);
+        }
+    }
+
+    private static void renderPdf(String htmlContent, OutputStream os) {
+        String xhtml = Jsoup.parse(htmlContent, "UTF-8")
+                .outputSettings(new Document.OutputSettings().syntax(Document.OutputSettings.Syntax.xml))
+                .outerHtml();
+
+        ITextRenderer renderer = new ITextRenderer();
+        renderer.setDocumentFromString(xhtml);
+        renderer.layout();
+        renderer.createPDF(os);
+    }
+
+    private String getHtmlContent(String gstDetails, Invoice invoice) {
         gstDetails = (gstDetails == null || gstDetails.isBlank()) ? "Deepak Agrawal<br>9425921009,7000347100" : gstDetails.replace("\n", "<br>");
 
         Party party = partyRepository.findByName(invoice.getPartyName());
@@ -144,23 +169,7 @@ public class InvoiceService {
         context.setVariable("halfTax", String.format("%.2f", invoice.getTax() / 2.0));
         context.setVariable("formattedDiscount", formatDiscount(invoice.getAdditionalDiscount()));
 
-        String htmlContent = templateEngine.process("templateInvoice", context);
-
-        response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "attachment; filename=invoice_" + invoice.getPartyName().replaceAll("\\s+", "_") + ".pdf");
-
-        try (OutputStream os = response.getOutputStream()) {
-            String xhtml = Jsoup.parse(htmlContent, "UTF-8")
-                    .outputSettings(new Document.OutputSettings().syntax(Document.OutputSettings.Syntax.xml))
-                    .outerHtml();
-
-            ITextRenderer renderer = new ITextRenderer();
-            renderer.setDocumentFromString(xhtml);
-            renderer.layout();
-            renderer.createPDF(os);
-            os.flush();
-            log.info("✅ PDF generated and sent for invoice ID: {}", invoiceId);
-        }
+        return templateEngine.process("templateInvoice", context);
     }
 
     /**
@@ -184,4 +193,28 @@ public class InvoiceService {
         log.info("Fetching all invoices");
         return new Response(invoiceRepository.findAll(), "All invoices fetched successfully");
     }
+
+    public void warmUp() {
+        try {
+            log.info("🚀 Warmup: preloading invoice PDF engine...");
+
+            // Dummy invoice object
+            Invoice inv = new Invoice();
+            inv.setInvoiceId(0);
+            inv.setPartyName("Warmup");
+            inv.setTax(0.0);
+            inv.setAdditionalDiscount("0");
+
+            String html = getHtmlContent("Warmup<br>Init", inv);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            renderPdf(html, bos);  // No HTTP response, just warm-up
+
+            bos.close();
+            log.info("✅ Warmup completed.");
+
+        } catch (Exception e) {
+            log.warn("Warm-up failed: {}", e.getMessage());
+        }
+    }
+
 }
