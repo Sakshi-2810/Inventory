@@ -132,7 +132,7 @@ public class InvoiceService {
         String htmlContent = getHtmlContent(gstDetails, invoice);
 
         response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "attachment; filename=invoice_" + invoice.getPartyName().replaceAll("\\s+", "_") + ".pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=invoice#" + invoice.getInvoiceId() + "_" + invoice.getPartyName() + ".pdf");
 
         try (OutputStream os = response.getOutputStream()) {
             renderPdf(htmlContent, os);

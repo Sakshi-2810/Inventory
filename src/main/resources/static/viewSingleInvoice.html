@@ -448,16 +448,26 @@ async function loadStocks() {
     button.disabled = true;
 
     fetch(`/print?invoiceId=${encodeURIComponent(invoiceId)}&gstDetails=${encodeURIComponent(gstDetails)}`)
-        .then(res => res.blob())
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Invoice_${invoiceId}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
+        .then(async res => {
+            if (!res.ok) throw new Error("Failed to fetch PDF");
+
+              const disposition = res.headers.get("Content-Disposition");
+              let filename = `Invoice_${invoiceId}.pdf`;
+
+              if (disposition && disposition.includes("filename=")) {
+                  filename = disposition.split("filename=")[1].replace(/"/g, '');
+              }
+
+              const blob = await res.blob();
+              const url = window.URL.createObjectURL(blob);
+
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
         })
         .catch(err => console.error("PDF download failed:", err)).finally(() => {
             spinner.style.display = 'none';
