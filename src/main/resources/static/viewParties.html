@@ -414,9 +414,9 @@ td > div {
         <tr>
             <th class="sortable" data-index="0">Name <span></span></th>
             <th class="sortable" data-index="1">Phone <span></span></th>
-            <th class="sortable" data-index="3">Address <span></span></th>
-            <th class="sortable" data-index="4">GSTIN <span></span></th>
-            <th class="sortable" data-index="5">Due Amount <span></span></th>
+            <th class="sortable" data-index="2">Address <span></span></th>
+            <th class="sortable" data-index="3">GSTIN <span></span></th>
+            <th class="sortable" data-index="4">Due Amount <span></span></th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -505,8 +505,10 @@ document.querySelectorAll('#partiesTable th.sortable').forEach(th => {
             const cellA = a.children[index].innerText.trim().toLowerCase();
             const cellB = b.children[index].innerText.trim().toLowerCase();
             // Numeric sort for Due Amount
-            if (index === 4) {
-                return asc ? (parseFloat(cellA) - parseFloat(cellB)) : (parseFloat(cellB) - parseFloat(cellA));
+           if (index === 4) {
+                const numA = parseFloat((cellA || "0").replace(/,/g, ''));
+                const numB = parseFloat((cellB || "0").replace(/,/g, ''));
+                return asc ? (numA - numB) : (numB - numA);
             }
             return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
         });
@@ -548,7 +550,9 @@ let partyList = [];
             <td contenteditable="true">${p.phoneNumber || ''}</td>
             <td contenteditable="true">${p.address || ''}</td>
             <td contenteditable="true">${p.gstin || ''}</td>
-            <td contenteditable="false" class="${p.totalDue >= 0 ? 'green' : 'red'}">${p.totalDue || 0}</td>
+            <td contenteditable="false" class="${p.totalDue >= 0 ? 'green' : 'red'}">
+              ${ (p.totalDue || 0).toLocaleString('en-IN') }
+            </td>
             <td>
             <div style="display: flex; align-items: center; gap: 8px;">
               <button class="btn btn-primary" 
