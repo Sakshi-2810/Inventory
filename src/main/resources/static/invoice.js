@@ -1,50 +1,17 @@
  let stockData = [];
-
-window.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const [partyRes, stockRes] = await Promise.all([
-      fetch('/parties'), fetch('/stock/summary')
-    ]);
-    const parties = (await partyRes.json()).data;
-    stockData = (await stockRes.json()).data;
-
-    const partyOptions = document.getElementById('partyOptions');
-    const partyInput = document.getElementById('partyInput');
-
-    function populatePartyOptions() {
-      partyOptions.innerHTML = parties.map(p => `<option value="${p.name}">`).join('');
-    }
-    populatePartyOptions();
-
-    partyInput.addEventListener('change', function () {
-      const value = this.value.trim();
-      if (value && !parties.some(p => p.name.toLowerCase() === value.toLowerCase())) {
-        parties.push({ name: value });
-        populatePartyOptions();
-      }
-    });
-
-    const tbody = document.querySelector('#stockTable tbody');
-    const addRowBtn = document.getElementById('addRowBtn');
-    const stockOptions = document.getElementById('stockOptions');
-
-    stockOptions.innerHTML = stockData.map(s =>
-      `<option value="${s.itemName}" data-unit="${s.unit}" data-price="${s.price}" data-gst="${s.gst}">`
-    ).join('');
-
-    function createRow() {
+function createRow(stock = {}) {
       const row = document.createElement('tr');
-       const rowCount = tbody.rows.length + 1;
-       row.innerHTML = `
+       const rowCount = document.querySelector('#stockTable tbody').rows.length + 1;
+          row.innerHTML = `
         <td>${rowCount}</td>
-        <td><input type="text" list="stockOptions" class="stockInput" placeholder="Search stock..." required></td>
-        <td><input type="number" min="1" placeholder="Qty" class="qtyInput" required style="width:80px;"></td>
-        <td><input type="text" class="unitInput" style="width:80px;"></td>
-        <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;"></td>
-        <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;"></td>
-       <td><input type="number" class="totalInput" style="width:100px;" readonly></td>
-       <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>
-        `;
+         <td><input type="text" list="stockOptions" class="stockInput" placeholder="Search stock..." required value="${stock.itemName || ''}"></td>
+        <td><input type="number" min="1" placeholder="Qty" class="qtyInput" required style="width:80px;" value="${stock.quantity || ''}"></td>
+        <td><input type="text" class="unitInput" style="width:80px;" value="${stock.unit || ''}"></td>
+        <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;" value="${stock.price || ''}"></td>
+        <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;" value="${stock.gst || ''}"></td>
+        <td><input type="number" class="totalInput" style="width:100px;" readonly></td>
+        <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>
+          `;
       const qtyInput = row.querySelector('.qtyInput');
       const stockInput = row.querySelector('.stockInput');
       const unitInput = row.querySelector('.unitInput');
@@ -78,11 +45,40 @@ window.addEventListener('DOMContentLoaded', async () => {
           gstInput.addEventListener('input', updateTotal);
 
         row.querySelector('.removeBtn').addEventListener('click', () => row.remove());
-        tbody.appendChild(row);
+        document.querySelector('#stockTable tbody').appendChild(row);
         updateTotal();
       }
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const [partyRes, stockRes] = await Promise.all([
+      fetch('/parties'), fetch('/stock/summary')
+    ]);
+    const parties = (await partyRes.json()).data;
+    stockData = (await stockRes.json()).data;
 
-      // createRow();
+    const partyOptions = document.getElementById('partyOptions');
+    const partyInput = document.getElementById('partyInput');
+
+    function populatePartyOptions() {
+      partyOptions.innerHTML = parties.map(p => `<option value="${p.name}">`).join('');
+    }
+    populatePartyOptions();
+
+    partyInput.addEventListener('change', function () {
+      const value = this.value.trim();
+      if (value && !parties.some(p => p.name.toLowerCase() === value.toLowerCase())) {
+        parties.push({ name: value });
+        populatePartyOptions();
+      }
+    });
+
+    const tbody = document.querySelector('#stockTable tbody');
+    const addRowBtn = document.getElementById('addRowBtn');
+    const stockOptions = document.getElementById('stockOptions');
+
+    stockOptions.innerHTML = stockData.map(s =>
+      `<option value="${s.itemName}" data-unit="${s.unit}" data-price="${s.price}" data-gst="${s.gst}">`
+    ).join('');
       addRowBtn.addEventListener('click', createRow);
     } catch (err) {
       showNotification('Error loading data: ' + err.message, 'error');
@@ -228,3 +224,52 @@ function showNotification(message, type = 'success', duration = 3000) {
 function closeNotification() {
   document.getElementById('notification').style.display = 'none';
 }
+// Modal open/close logic
+document.getElementById('openImportModalBtn').onclick = function() {
+  document.getElementById('importModal').style.display = 'flex';
+};
+function closeImportModal() {
+  document.getElementById('importModal').style.display = 'none';
+  document.getElementById('excelFileInput').value = '';
+}
+
+// Download template logic
+document.getElementById('downloadTemplateLink').onclick = function(e) {
+  e.preventDefault();
+  // Create a dummy Excel file
+  const wsData = [
+    ['Stock Name', 'Qty', 'Unit', 'Price', 'GST'],
+    ['Sample Item', 10, 'pcs', 100, 5],
+    ['Another Item', 5, 'kg', 200, 12]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "StockTemplate");
+  XLSX.writeFile(wb, "Stock_Import_Template.xlsx");
+};
+
+// Import logic
+document.getElementById('importExcelConfirmBtn').onclick = function() {
+  const fileInput = document.getElementById('excelFileInput');
+  const file = fileInput.files[0];
+  if (!file) {
+    showNotification('Please select an Excel file to import.', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const data = new Uint8Array(evt.target.result);
+    const workbook = XLSX.read(data, {type: 'array'});
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+    // Expecting headers: Stock Name, Qty, Unit, Price, GST
+    for (let i = 1; i < rows.length; i++) {
+      const [itemName, quantity, unit, price, gst] = rows[i];
+      if (!itemName) continue;
+      createRow({ itemName, quantity, unit, price, gst });
+    }
+    closeImportModal();
+    showNotification('Stock data imported from Excel.', 'success');
+  };
+  reader.readAsArrayBuffer(file);
+};

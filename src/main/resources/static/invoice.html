@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
     <title>Generate Invoice</title>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <link rel="icon"
           href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
@@ -293,6 +294,30 @@
     </div>
 
     <h3>Stock Details</h3>
+    <button type="button" class="btn primary" id="openImportModalBtn">Import from Excel</button>
+
+    <!-- Import Modal -->
+    <div id="importModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); z-index:10000; align-items:center; justify-content:center;">
+      <div style="background:#fff; border-radius:10px; padding:28px 24px; min-width:320px; max-width:95vw; box-shadow:0 4px 32px rgba(25,103,210,0.13); position:relative;">
+        <button onclick="closeImportModal()" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:22px; color:#888; cursor:pointer;">&times;</button>
+        <h3 style="margin-top:0;">Import Stock Data from Excel</h3>
+        <ol style="font-size:1em; color:#333; margin-bottom:12px;">
+          <li>Download the <a href="#" id="downloadTemplateLink">Excel template</a>.</li>
+          <li>Fill in your stock details in the template.</li>
+          <li>Click "Choose File" to select your Excel file and import.</li>
+        </ol>
+        <div style="margin-bottom:10px; color:#555;">
+          <b>Required columns:</b> <br>
+          <code>Stock Name | Qty | Unit | Price | GST</code>
+        </div>
+        <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="margin-bottom:14px;">
+        <div>
+          <button type="button" class="btn primary" id="importExcelConfirmBtn">Import</button>
+          <button type="button" class="btn secondary" onclick="closeImportModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+    
     <table id="stockTable">
         <thead>
         <tr>
@@ -302,7 +327,8 @@
             <th>Unit</th>
             <th>Price</th>
             <th>GST (%)</th>
-            <th></th>
+            <th>Total</th>
+            <th>Action</th>
         </tr>
         </thead>
         <tbody></tbody>

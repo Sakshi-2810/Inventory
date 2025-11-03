@@ -266,6 +266,12 @@
       <span class="btn-text">Download PDF</span>
       <span class="spinner" style="display:none;"></span>
     </button>
+
+    <button class="btn btn-primary" id="btnExportExcel">
+      <span class="btn-text">Export to Excel</span>
+      <span class="spinner" style="display:none;"></span>
+    </button>
+
     <div id="gstModal" class="modal">
       <div class="modal-content">
         <h3>Enter Firm GST Details</h3>
@@ -288,293 +294,370 @@
     </div>
   </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
-  let currentBtn = null;
-function toInputDateFormat(ddmmyyyy) {
-  const [dd, mm, yyyy] = ddmmyyyy.split('-');
-  return `${yyyy}-${mm}-${dd}`;
-}
+document.getElementById('btnExportExcel').addEventListener('click', async function () {
+  const spinner = this.querySelector('.spinner');
+  const btnText = this.querySelector('.btn-text');
+  spinner.style.display = 'inline-block';
+  btnText.style.display = 'none';
+  this.disabled = true;
 
-// Convert back to dd-mm-yyyy for display elsewhere if needed
-function toDisplayFormat(yyyymmdd) {
-  const [yyyy, mm, dd] = yyyymmdd.split('-');
-  return `${dd}-${mm}-${yyyy}`;
-}
-// Step 1: Open modal on button click
-function promptGST(btn) {
-  currentBtn = btn;
-  document.getElementById("gstModal").style.display = "flex";
-}
+  try {
+    const partyName = document.getElementById('partyName').value || '';
+    const invoiceNum = document.getElementById('invoiceId').textContent || 'NA';
+    const invoiceDate = document.getElementById('invoiceDate').value || 'NA';
+    const additionalDiscount = document.getElementById('additionalDiscount').value || '';
+    const gst = document.getElementById('gst').value || '';
+    const totalCost = document.getElementById('totalCost').value || '';
+    const paidAmount = document.getElementById('paidAmount').value || '';
 
-// Step 2: Close modal
-function closeGSTModal() {
-  document.getElementById("gstModal").style.display = "none";
-  document.getElementById("gstModal").querySelector("textarea").value = "";
-  currentBtn = null;
-}
+    const table = document.getElementById('stockTable');
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim()).slice(0, -1);
+    const rows = Array.from(table.querySelectorAll('tbody tr')).map(row =>
+      Array.from(row.querySelectorAll('td')).slice(0, -1).map(cell => {
+        const input = cell.querySelector('input');
+        return input ? input.value : cell.innerText;
+      })
+    );
 
-// Step 3: Confirm GST and call downloadInvoice
-function confirmGST() {
-  const gstValue = document.getElementById("firmGst").value.trim().replace(/\n/g, "<br>");
-  closeGSTModal();
-  downloadInvoice(document.getElementById("btnDownload"), gstValue);
-}
-  const params = new URLSearchParams(window.location.search);
-  const invoiceId = params.get('id');
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Invoice");
 
-  const invoiceFields = {
-    partyName: document.getElementById('partyName'),
-    transactionType: document.getElementById('transactionType'),
-    totalCost: document.getElementById('totalCost'),
-    additionalDiscount: document.getElementById('additionalDiscount'),
-    paidAmount: document.getElementById('paidAmount'),
-    gst: document.getElementById('gst')
-  };
-  
-  let invoiceData = null;
+    // Add meta info
+    sheet.addRows([
+      ['Party Name', partyName],
+      ['Transaction Type', document.getElementById('transactionType').value || ''],
+      ['Invoice Date', invoiceDate],
+      ['Invoice Number', invoiceNum],
+      []
+    ]);
 
-  function goHome(){ window.location.href = '/'; }
-  function goBack(){ window.history.back(); }
+    // Add header row
+    const headerRow = sheet.addRow(headers);
+    headerRow.font = { bold: true };
 
-  async function loadInvoice() {
-    try {
-      const res = await fetch(`/invoice?invoiceId=${invoiceId}`);
-      if (!res.ok) throw new Error('Failed to fetch invoice data');
-      invoiceData = (await res.json()).data;
+    // Add table data
+    rows.forEach(r => sheet.addRow(r));
 
-      document.getElementById('invoiceId').textContent = invoiceData.invoiceId;
-      document.getElementById('invoiceDate').value  = toInputDateFormat(invoiceData.date ? `${invoiceData.date}` : '');
-      invoiceFields.partyName.value = invoiceData.partyName;
-      invoiceFields.transactionType.value = invoiceData.transactionType;
-      invoiceFields.totalCost.value = invoiceData.totalCost || 0;
-      invoiceFields.gst.value = invoiceData.tax || 0;
-      invoiceFields.additionalDiscount.value = invoiceData.additionalDiscount || 0;
-      invoiceFields.paidAmount.value = invoiceData.paidAmount || 0;
+    sheet.addRow([]);
+    sheet.addRow(['Additional Discount', additionalDiscount]);
+    sheet.addRow(['GST', gst]);
+    sheet.addRow(['Total Price', totalCost]);
+    sheet.addRow(['Paid Amount', paidAmount]);
 
-      tbody.innerHTML = '';
-      (invoiceData.stockBills || []).forEach(s => {
-        const row = document.createElement('tr');
-         const rowCount = tbody.rows.length + 1;
-        row.innerHTML = `
-                        <td>${rowCount}</td>
-                        <td><input type="text" list="stockOptions" class="stockInput" value="${s.itemName}"></td>
-                         <td><input type="number" value="${s.quantity.toFixed(3)}"></td>
-                         <td><input type="text" value="${s.unit}"></td>
-                         <td><input type="number" value="${s.price}"></td>
-                         <td><input type="number" value="${s.gst}"></td>
-                         <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>`;
-         row.querySelector('.removeBtn').addEventListener('click', () => row.remove());
-         tbody.appendChild(row);
+    // Auto width
+    sheet.columns.forEach(col => {
+      let max = 10;
+      col.eachCell({ includeEmpty: true }, cell => {
+        const len = cell.value ? cell.value.toString().length : 0;
+        if (len > max) max = len;
       });
-    } catch (err) {
-      showNotification('Error: ' + err.message, 'error');
-    } finally { hideLoader(); }
-  }
+      col.width = max + 2;
+    });
 
-  document.getElementById('btnSave').addEventListener('click', async () => {
-    const spinner = btnSave.querySelector('.spinner');
-    const btnText = btnSave.querySelector('.btn-text');
-    spinner.style.display = 'inline-block';
-    btnText.style.display = 'none';
-    btnSave.disabled = true;
+    // Export file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const filename = `Invoice#${invoiceNum}_${partyName}_${invoiceDate}.xlsx`;
+    saveAs(new Blob([buffer]), filename);
 
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    const stockBills = rows.map(r => ({
-      itemName: r.cells[1].querySelector('input').value.trim(),
-      quantity: Number(r.cells[2].querySelector('input').value || 0),
-      unit: r.cells[3].querySelector('input').value.trim(),
-      price: Number(r.cells[4].querySelector('input').value || 0),
-      gst: Number(r.cells[5].querySelector('input').value || 0)
-    }));
-
-    const payload = { ...invoiceData,
-      invoiceId: Number(invoiceId),
-      partyName: invoiceFields.partyName.value,
-      transactionType: invoiceFields.transactionType.value,
-      stockBills,
-      totalCost: Number(invoiceFields.totalCost.value || 0),
-      additionalDiscount: invoiceFields.additionalDiscount.value || '',
-      paidAmount: Number(invoiceFields.paidAmount.value || 0),
-      date: toDisplayFormat(document.getElementById("invoiceDate").value)
-    };
-
-    try {
-      await fetch('/generateInvoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      showNotification('Invoice saved successfully.', 'success');
-      location.reload(); 
-    } catch (err) { showNotification('Error saving invoice: ' + err.message, 'error'); }
-    finally{ 
+  } catch (err) {
+    showNotification('Export failed: ' + err.message, 'error');
+  } finally {
     spinner.style.display = 'none';
     btnText.style.display = 'inline';
-    btnSave.disabled = false;
+    this.disabled = false;
   }
-  });
+});
 
-  function showLoader(){ document.getElementById('loaderOverlay').classList.remove('hide'); }
-  function hideLoader(){ document.getElementById('loaderOverlay').classList.add('hide'); }
-  showLoader(); loadInvoice(); loadStocks();
-  let stockData = [];
-const tbody = document.querySelector('#stockTable tbody');
-const addRowBtn = document.getElementById('addRowBtn');
-const stockOptions = document.getElementById('stockOptions');
-
-// Load stock data
-async function loadStocks() {
-  try {
-    const res = await fetch('/stock/summary');
-    if (!res.ok) throw new Error("Failed to fetch stock summary");
-    stockData = (await res.json()).data;
-
-    // Populate datalist options
-    stockOptions.innerHTML = stockData.map(s =>
-      `<option value="${s.itemName}" data-unit="${s.unit}" data-price="${s.price}" data-gst="${s.gst}">`
-    ).join('');
-  } catch (err) {
-    showNotification("Error loading stock data: " + err.message, "error");
-  } finally {
-    hideLoader();
+let currentBtn = null;
+  function toInputDateFormat(ddmmyyyy) {
+    const [dd, mm, yyyy] = ddmmyyyy.split('-');
+    return `${yyyy}-${mm}-${dd}`;
   }
-}
- function downloadInvoice(button, gstDetails) {
+
+  // Convert back to dd-mm-yyyy for display elsewhere if needed
+  function toDisplayFormat(yyyymmdd) {
+    const [yyyy, mm, dd] = yyyymmdd.split('-');
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  // Step 1: Open modal on button click
+  function promptGST(btn) {
+    currentBtn = btn;
+    document.getElementById("gstModal").style.display = "flex";
+  }
+
+  // Step 2: Close modal
+  function closeGSTModal() {
+    document.getElementById("gstModal").style.display = "none";
+    document.getElementById("gstModal").querySelector("textarea").value = "";
+    currentBtn = null;
+  }
+
+  // Step 3: Confirm GST and call downloadInvoice
+  function confirmGST() {
+    const gstValue = document.getElementById("firmGst").value.trim().replace(/\n/g, "<br>");
+    closeGSTModal();
+    downloadInvoice(document.getElementById("btnDownload"), gstValue);
+  }
     const params = new URLSearchParams(window.location.search);
     const invoiceId = params.get('id');
-    if (!invoiceId) return showNotification("Invoice ID missing", 'error');
 
-    const spinner = button.querySelector('.spinner');
-    const btnText = button.querySelector('.btn-text');
-    spinner.style.display = 'inline-block';
-    btnText.style.display = 'none';
-    button.disabled = true;
+    const invoiceFields = {
+      partyName: document.getElementById('partyName'),
+      transactionType: document.getElementById('transactionType'),
+      totalCost: document.getElementById('totalCost'),
+      additionalDiscount: document.getElementById('additionalDiscount'),
+      paidAmount: document.getElementById('paidAmount'),
+      gst: document.getElementById('gst')
+    };
 
-    fetch(`/print?invoiceId=${encodeURIComponent(invoiceId)}&gstDetails=${encodeURIComponent(gstDetails)}`)
-        .then(async res => {
-            if (!res.ok) throw new Error("Failed to fetch PDF");
+    let invoiceData = null;
 
-              const disposition = res.headers.get("Content-Disposition");
-              let filename = `Invoice_${invoiceId}.pdf`;
+    function goHome(){ window.location.href = '/'; }
+    function goBack(){ window.history.back(); }
 
-              if (disposition && disposition.includes("filename=")) {
-                  filename = disposition.split("filename=")[1].replace(/"/g, '');
-              }
+    async function loadInvoice() {
+      try {
+        const res = await fetch(`/invoice?invoiceId=${invoiceId}`);
+        if (!res.ok) throw new Error('Failed to fetch invoice data');
+        invoiceData = (await res.json()).data;
 
-              const blob = await res.blob();
-              const url = window.URL.createObjectURL(blob);
+        document.getElementById('invoiceId').textContent = invoiceData.invoiceId;
+        document.getElementById('invoiceDate').value  = toInputDateFormat(invoiceData.date ? `${invoiceData.date}` : '');
+        invoiceFields.partyName.value = invoiceData.partyName;
+        invoiceFields.transactionType.value = invoiceData.transactionType;
+        invoiceFields.totalCost.value = invoiceData.totalCost || 0;
+        invoiceFields.gst.value = invoiceData.tax || 0;
+        invoiceFields.additionalDiscount.value = invoiceData.additionalDiscount || 0;
+        invoiceFields.paidAmount.value = invoiceData.paidAmount || 0;
 
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = filename;
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-              window.URL.revokeObjectURL(url);
-        })
-        .catch(err => console.error("PDF download failed:", err)).finally(() => {
-            spinner.style.display = 'none';
-            btnText.style.display = 'inline-block';
-            button.disabled = false;
+        tbody.innerHTML = '';
+        (invoiceData.stockBills || []).forEach(s => {
+          const row = document.createElement('tr');
+           const rowCount = tbody.rows.length + 1;
+          row.innerHTML = `
+                          <td>${rowCount}</td>
+                          <td><input type="text" list="stockOptions" class="stockInput" value="${s.itemName}"></td>
+                           <td><input type="number" value="${s.quantity.toFixed(3)}"></td>
+                           <td><input type="text" value="${s.unit}"></td>
+                           <td><input type="number" value="${s.price}"></td>
+                           <td><input type="number" value="${s.gst}"></td>
+                           <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>`;
+           row.querySelector('.removeBtn').addEventListener('click', () => row.remove());
+           tbody.appendChild(row);
         });
-      }
-       addRowBtn.addEventListener('click', createRow);
-       function createRow() {
-      const row = document.createElement('tr');
-         const rowCount = document.querySelector('#stockTable tbody').rows.length + 1;
-      row.innerHTML = `
-        <td>${rowCount}</td>
-        <td><input type="text" list="stockOptions" class="stockInput" placeholder="Stock" required></td>
-        <td><input type="number" min="1" placeholder="Qty" class="qtyInput" required style="width:80px;"></td>
-        <td><input type="text" class="unitInput" style="width:80px;" required></td>
-        <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;" required></td>
-        <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;" required></td>
-       <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>
-        `;
-      const qtyInput = row.querySelector('.qtyInput');
-      const stockInput = row.querySelector('.stockInput');
-      const unitInput = row.querySelector('.unitInput');
-      const priceInput = row.querySelector('.priceInput');
-      const gstInput = row.querySelector('.gstInput');
-      
-        stockInput.addEventListener('change', function () {
-        const stock = stockData.find(s => s.itemName.toLowerCase() === this.value.toLowerCase());
-        if (stock) {
-          unitInput.value = stock.unit;
-          priceInput.value = stock.price;
-          gstInput.value = stock.gst;
-        } else {
-          unitInput.value = '';
-          priceInput.value = '';
-          gstInput.value = '';
-        }
-        });
-
-        row.querySelector('.removeBtn').addEventListener('click', () => row.remove());
-        tbody.appendChild(row);
-      }
-      // Show notification
-function showNotification(message, type = 'success', duration = 3000) {
-  const banner = document.getElementById('notification');
-  const messageSpan = document.getElementById('notification-message');
-
-  banner.className = `notification ${type}`; // success or error
-  messageSpan.innerText = message;
-  banner.style.display = 'flex';
-
-  // Auto hide after duration
-  setTimeout(() => {
-    banner.style.display = 'none';
-  }, duration);
-}
-
-// Close button
-function closeNotification() {
-  document.getElementById('notification').style.display = 'none';
-}
-async function deleteCurrentInvoice(button) {
-  const params = new URLSearchParams(window.location.search);
-  const invoiceId = params.get("id");;
-  if (!invoiceId) {
-    showNotification("No invoice ID found in URL", "error");
-    return;
-  }
- const spinner = button.querySelector(".spinner");
-  const text = button.querySelector(".btn-text");
-
-  if (!confirm(`Are you sure you want to delete Invoice #${invoiceId}?`)) return;
-
-  // Show loader
-  text.style.display = "none";
-  spinner.style.display = "inline-block";
-
-  try {
-    const res = await fetch(`/invoice/delete?invoiceId=${invoiceId}`, {
-      method: "DELETE"
-    });
-    const data = await res.json();
-
-    if (res.ok) {
-      showNotification(`Invoice #${invoiceId} deleted successfully!`, "success");
-      // redirect to invoice list after delete
-      setTimeout(() => {
-        window.location.href = "/invoicesList.html";
-      }, 1500);
-    } else {
-      showNotification(data.message || "Failed to delete invoice", "error");
+      } catch (err) {
+        showNotification('Error: ' + err.message, 'error');
+      } finally { hideLoader(); }
     }
-  } catch (err) {
-    console.error("Delete failed:", err);
-    showNotification("Something went wrong while deleting invoice", "error");
-  } finally {
-    // Restore button text & hide spinner
-    text.style.display = "inline";
-    spinner.style.display = "none";
+
+    document.getElementById('btnSave').addEventListener('click', async () => {
+      const spinner = btnSave.querySelector('.spinner');
+      const btnText = btnSave.querySelector('.btn-text');
+      spinner.style.display = 'inline-block';
+      btnText.style.display = 'none';
+      btnSave.disabled = true;
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const stockBills = rows.map(r => ({
+        itemName: r.cells[1].querySelector('input').value.trim(),
+        quantity: Number(r.cells[2].querySelector('input').value || 0),
+        unit: r.cells[3].querySelector('input').value.trim(),
+        price: Number(r.cells[4].querySelector('input').value || 0),
+        gst: Number(r.cells[5].querySelector('input').value || 0)
+      }));
+
+      const payload = { ...invoiceData,
+        invoiceId: Number(invoiceId),
+        partyName: invoiceFields.partyName.value,
+        transactionType: invoiceFields.transactionType.value,
+        stockBills,
+        totalCost: Number(invoiceFields.totalCost.value || 0),
+        additionalDiscount: invoiceFields.additionalDiscount.value || '',
+        paidAmount: Number(invoiceFields.paidAmount.value || 0),
+        date: toDisplayFormat(document.getElementById("invoiceDate").value)
+      };
+
+      try {
+        await fetch('/generateInvoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        showNotification('Invoice saved successfully.', 'success');
+        location.reload();
+      } catch (err) { showNotification('Error saving invoice: ' + err.message, 'error'); }
+      finally{
+      spinner.style.display = 'none';
+      btnText.style.display = 'inline';
+      btnSave.disabled = false;
+    }
+    });
+
+    function showLoader(){ document.getElementById('loaderOverlay').classList.remove('hide'); }
+    function hideLoader(){ document.getElementById('loaderOverlay').classList.add('hide'); }
+    showLoader(); loadInvoice(); loadStocks();
+    let stockData = [];
+  const tbody = document.querySelector('#stockTable tbody');
+  const addRowBtn = document.getElementById('addRowBtn');
+  const stockOptions = document.getElementById('stockOptions');
+
+  // Load stock data
+  async function loadStocks() {
+    try {
+      const res = await fetch('/stock/summary');
+      if (!res.ok) throw new Error("Failed to fetch stock summary");
+      stockData = (await res.json()).data;
+
+      // Populate datalist options
+      stockOptions.innerHTML = stockData.map(s =>
+        `<option value="${s.itemName}" data-unit="${s.unit}" data-price="${s.price}" data-gst="${s.gst}">`
+      ).join('');
+    } catch (err) {
+      showNotification("Error loading stock data: " + err.message, "error");
+    } finally {
+      hideLoader();
+    }
   }
-}
-function scrollToBottom() {
-  window.scrollTo({
-    top: document.body.scrollHeight,
-    behavior: "smooth"
-  });
-}
+   function downloadInvoice(button, gstDetails) {
+      const params = new URLSearchParams(window.location.search);
+      const invoiceId = params.get('id');
+      if (!invoiceId) return showNotification("Invoice ID missing", 'error');
+
+      const spinner = button.querySelector('.spinner');
+      const btnText = button.querySelector('.btn-text');
+      spinner.style.display = 'inline-block';
+      btnText.style.display = 'none';
+      button.disabled = true;
+
+      fetch(`/print?invoiceId=${encodeURIComponent(invoiceId)}&gstDetails=${encodeURIComponent(gstDetails)}`)
+          .then(async res => {
+              if (!res.ok) throw new Error("Failed to fetch PDF");
+
+                const disposition = res.headers.get("Content-Disposition");
+                let filename = `Invoice_${invoiceId}.pdf`;
+
+                if (disposition && disposition.includes("filename=")) {
+                    filename = disposition.split("filename=")[1].replace(/"/g, '');
+                }
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+          })
+          .catch(err => console.error("PDF download failed:", err)).finally(() => {
+              spinner.style.display = 'none';
+              btnText.style.display = 'inline-block';
+              button.disabled = false;
+          });
+        }
+         addRowBtn.addEventListener('click', createRow);
+         function createRow() {
+        const row = document.createElement('tr');
+           const rowCount = document.querySelector('#stockTable tbody').rows.length + 1;
+        row.innerHTML = `
+          <td>${rowCount}</td>
+          <td><input type="text" list="stockOptions" class="stockInput" placeholder="Stock" required></td>
+          <td><input type="number" min="1" placeholder="Qty" class="qtyInput" required style="width:80px;"></td>
+          <td><input type="text" class="unitInput" style="width:80px;" required></td>
+          <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;" required></td>
+          <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;" required></td>
+         <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>
+          `;
+        const qtyInput = row.querySelector('.qtyInput');
+        const stockInput = row.querySelector('.stockInput');
+        const unitInput = row.querySelector('.unitInput');
+        const priceInput = row.querySelector('.priceInput');
+        const gstInput = row.querySelector('.gstInput');
+
+          stockInput.addEventListener('change', function () {
+          const stock = stockData.find(s => s.itemName.toLowerCase() === this.value.toLowerCase());
+          if (stock) {
+            unitInput.value = stock.unit;
+            priceInput.value = stock.price;
+            gstInput.value = stock.gst;
+          } else {
+            unitInput.value = '';
+            priceInput.value = '';
+            gstInput.value = '';
+          }
+          });
+
+          row.querySelector('.removeBtn').addEventListener('click', () => row.remove());
+          tbody.appendChild(row);
+        }
+        // Show notification
+  function showNotification(message, type = 'success', duration = 3000) {
+    const banner = document.getElementById('notification');
+    const messageSpan = document.getElementById('notification-message');
+
+    banner.className = `notification ${type}`; // success or error
+    messageSpan.innerText = message;
+    banner.style.display = 'flex';
+
+    // Auto hide after duration
+    setTimeout(() => {
+      banner.style.display = 'none';
+    }, duration);
+  }
+
+  // Close button
+  function closeNotification() {
+    document.getElementById('notification').style.display = 'none';
+  }
+  async function deleteCurrentInvoice(button) {
+    const params = new URLSearchParams(window.location.search);
+    const invoiceId = params.get("id");;
+    if (!invoiceId) {
+      showNotification("No invoice ID found in URL", "error");
+      return;
+    }
+   const spinner = button.querySelector(".spinner");
+    const text = button.querySelector(".btn-text");
+
+    if (!confirm(`Are you sure you want to delete Invoice #${invoiceId}?`)) return;
+
+    // Show loader
+    text.style.display = "none";
+    spinner.style.display = "inline-block";
+
+    try {
+      const res = await fetch(`/invoice/delete?invoiceId=${invoiceId}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showNotification(`Invoice #${invoiceId} deleted successfully!`, "success");
+        // redirect to invoice list after delete
+        setTimeout(() => {
+          window.location.href = "/invoicesList.html";
+        }, 1500);
+      } else {
+        showNotification(data.message || "Failed to delete invoice", "error");
+      }
+    } catch (err) {
+      console.error("Delete failed:", err);
+      showNotification("Something went wrong while deleting invoice", "error");
+    } finally {
+      // Restore button text & hide spinner
+      text.style.display = "inline";
+      spinner.style.display = "none";
+    }
+  }
+  function scrollToBottom() {
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: "smooth"
+    });
+  }
 
 </script>
 

@@ -43,6 +43,15 @@ public class InvoiceService {
     @Autowired
     private SpringTemplateEngine templateEngine;
 
+    private static void renderPdf(String htmlContent, OutputStream os) {
+        String xhtml = Jsoup.parse(htmlContent, "UTF-8").outputSettings(new Document.OutputSettings().syntax(Document.OutputSettings.Syntax.xml)).outerHtml();
+
+        ITextRenderer renderer = new ITextRenderer();
+        renderer.setDocumentFromString(xhtml);
+        renderer.layout();
+        renderer.createPDF(os);
+    }
+
     public Integer generateNewInvoiceId() {
         Integer maxId = Optional.ofNullable(invoiceRepository.findTopByOrderByInvoiceIdDesc()).map(Invoice::getInvoiceId).orElse(0);
         return maxId + 1;
@@ -61,7 +70,7 @@ public class InvoiceService {
         invoice.setSubTotal(calculateSubTotal(invoice.getStockBills()));
         invoice.setTax(totalCost - invoice.getSubTotal());
 
-        if (!invoice.getAdditionalDiscount().isBlank()) {
+        if (invoice.getAdditionalDiscount() != null && !invoice.getAdditionalDiscount().isBlank()) {
             if (invoice.getAdditionalDiscount().contains("%")) {
                 double discountValue = Double.parseDouble(invoice.getAdditionalDiscount().replace("%", "").trim());
                 totalCost -= (int) Math.round((totalCost * discountValue) / 100.0);
@@ -139,17 +148,6 @@ public class InvoiceService {
             os.flush();
             log.info("✅ PDF generated and sent for invoice ID: {}", invoiceId);
         }
-    }
-
-    private static void renderPdf(String htmlContent, OutputStream os) {
-        String xhtml = Jsoup.parse(htmlContent, "UTF-8")
-                .outputSettings(new Document.OutputSettings().syntax(Document.OutputSettings.Syntax.xml))
-                .outerHtml();
-
-        ITextRenderer renderer = new ITextRenderer();
-        renderer.setDocumentFromString(xhtml);
-        renderer.layout();
-        renderer.createPDF(os);
     }
 
     private String getHtmlContent(String gstDetails, Invoice invoice) {

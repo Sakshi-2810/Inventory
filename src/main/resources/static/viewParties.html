@@ -10,6 +10,97 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    /* Modern Ledger Table Styles */
+.ledger-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #f9fbfd;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(25, 103, 210, 0.07);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.ledger-table thead th {
+    background: #e3eafc;
+    color: #174ea6;
+    font-weight: 700;
+    font-size: 16px;
+    border-bottom: 2px solid #d1d9e6;
+    padding: 16px 12px;
+    letter-spacing: 0.02em;
+}
+
+.ledger-table tbody tr {
+    transition: background 0.18s, box-shadow 0.18s;
+    cursor: pointer;
+}
+.ledger-table tbody tr:hover {
+    background: #cedaea;
+    box-shadow: 0 2px 8px rgba(25, 103, 210, 0.10);
+}
+.ledger-table td {
+    padding: 14px 12px;
+    font-size: 15px;
+    border-bottom: 1px solid #e3eafc;
+    color: #2d3a4a;
+}
+
+.ledger-table td:last-child {
+    font-weight: 600;
+}
+
+.ledger-table .debit {
+    color: #e53935;
+    font-weight: 600;
+}
+
+.ledger-table .credit {
+    color: #21965a;
+    font-weight: 600;
+}
+
+.ledger-table .balance {
+    color: #1967d2;
+    font-weight: 700;
+}
+
+@media (max-width: 700px) {
+    .ledger-table thead th, .ledger-table td {
+        padding: 8px 5px;
+        font-size: 13px;
+    }
+}
+      .excel-btn {
+    background-color: #0d6efd; /* Bootstrap primary blue */
+    border-color: #0d6efd;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 6px;
+    transition: 0.2s ease-in-out;
+}
+
+.excel-btn:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.btn-back {
+    background-color: #f2f2f2;
+    border: 1px solid #ccc;
+    color: #333;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: 500;
+    margin-left: 10px;
+    transition: 0.2s ease-in-out;
+}
+
+.btn-back:hover {
+    background-color: #e6e6e6;
+    border-color: #bfbfbf;
+}
         .spinner {
   margin-left: 5px;
   font-size: 14px;
@@ -340,10 +431,14 @@ td > div {
             </button>
         </h3>
         <div id="invoiceList"></div>
+        <button class="btn btn-primary excel-btn" id="exportLedgerBtn" style="display:none; margin-bottom:12px;">
+            Export Ledger to Excel
+        </button>
         <button class="btn btn-back" onclick="backToParties()">Back to Parties</button>
     </div>
     
 </div>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script>
     let currentParty = null;
     // SEARCH
@@ -355,7 +450,50 @@ document.getElementById('partySearchInput').addEventListener('input', function()
         tr.style.display = text.includes(filter) ? '' : 'none';
     });
 });
-
+document.getElementById('exportLedgerBtn').addEventListener('click', function () {
+    if (!window.currentLedgerInvoices) return;
+    // Calculate running balance (oldest to newest)
+    const sorted = [...window.currentLedgerInvoices].sort((a, b) => new Date(a.date) - new Date(b.date));
+    let balance = 0;
+    const wsData = [
+        [
+            {v: 'Date', s: {font: {bold: true}}},
+            {v: 'Invoice #', s: {font: {bold: true}}},
+            {v: 'Type', s: {font: {bold: true}}},
+            {v: 'Debit (₹)', s: {font: {bold: true}}},
+            {v: 'Credit (₹)', s: {font: {bold: true}}},
+            {v: 'Balance (₹)', s: {font: {bold: true}}}
+        ]
+    ];
+    sorted.forEach(inv => {
+        let debit = 0, credit = 0;
+        if (inv.transactionType === 'SELL') {
+            debit = inv.totalCost - inv.paidAmount;
+            balance += Number(debit);
+        } else if (inv.transactionType === 'BUY') {
+            credit = inv.totalCost - inv.paidAmount;
+            balance -= Number(credit);
+        } else if (inv.transactionType === 'CASH') {
+            credit = inv.paidAmount;
+            balance -= Number(inv.paidAmount);
+        }
+        wsData.push([
+            inv.date,
+            inv.invoiceId,
+            inv.transactionType,
+            debit || '',
+            credit || '',
+            balance
+        ]);
+    });
+    // Newest first in Excel
+    wsData.splice(1, wsData.length - 1, ...wsData.slice(1).reverse());
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Ledger");
+    const party = document.getElementById('selectedPartyName').textContent || 'Party';
+    XLSX.writeFile(wb, `Ledger_${party}.xlsx`);
+});
 // SORT
 document.querySelectorAll('#partiesTable th.sortable').forEach(th => {
     th.addEventListener('click', function() {
@@ -446,9 +584,69 @@ let partyList = [];
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Error loading parties: ${err.message}</td></tr>`;
       }
     }
+// Ledger format for invoices
+function renderLedger(invoices) {
+    // Sort oldest to newest for balance calculation
+    const sorted = [...invoices].sort((a, b) => parseDMY(a.date) - parseDMY(b.date));
+    let balance = 0;
+    // Attach running balance to each invoice
+    sorted.forEach(inv => {
+        let debit = 0, credit = 0;
+        if (inv.transactionType === 'SELL') {
+            debit = inv.totalCost - inv.paidAmount;
+            balance += Number(debit);
+        } else if (inv.transactionType === 'BUY') {
+            credit = inv.totalCost - inv.paidAmount;
+            balance -= Number(credit);
+        } else if (inv.transactionType === 'CASH') {
+            credit = inv.paidAmount;
+            balance -= Number(inv.paidAmount);
+        }
+        inv._debit = debit || '';
+        inv._credit = credit || '';
+        inv._balance = balance;
+    });
+
+    // Display newest first
+    const display = [...sorted].reverse();
+
+    let html = `
+        <table class="ledger-table" style="margin-top:16px;">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Invoice #</th>
+                    <th>Type</th>
+                    <th>Debit (₹)</th>
+                    <th>Credit (₹)</th>
+                    <th>Balance (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    display.forEach(inv => {
+        html += `
+            <tr onclick="viewInvoicePage(${inv.invoiceId})">
+                <td>${inv.date}</td>
+                <td>${inv.invoiceId}</td>
+                <td>${inv.transactionType}</td>
+                <td class="debit">${inv._debit}</td>
+                <td class="credit">${inv._credit}</td>
+                <td class="balance">${inv._balance}</td>
+            </tr>
+        `;
+    });
+    html += '</tbody></table>';
+    return html;
+}
+function parseDMY(dateStr) {
+    const [dd, mm, yyyy] = dateStr.split(/[-/]/);
+    return new Date(`${yyyy}-${mm}-${dd}`);
+}
 
     async function viewInvoices(partyName) {
-    const partyRow = [...document.querySelectorAll('#partiesTable tbody tr')]
+    localStorage.setItem('selectedPartyName', partyName); // <-- Add this line
+   const partyRow = [...document.querySelectorAll('#partiesTable tbody tr')]
         .find(tr => tr.children[0].innerText === partyName);
 
     if (partyRow) {
@@ -469,57 +667,26 @@ let partyList = [];
     listDiv.innerHTML = 'Loading...';
 
     try {
-        // const res = await fetch(`/invoices/partyname?partyName=${encodeURIComponent(partyName)}`);
         const invoices = partyList.find(p => p.name === partyName).invoices;
         listDiv.innerHTML = '';
 
+        // In your viewInvoices function, replace the invoice rendering part with:
         if (!invoices.length) {
             listDiv.textContent = 'No invoices found for this party.';
             return;
         }
-
-        invoices.sort((a, b) => b.invoiceId - a.invoiceId).forEach(inv => {
-            const div = document.createElement('div');
-            div.className = 'invoice-item';
-            
-            // Determine color based on transaction type and due amount
-            if (inv.transactionType === 'SELL') {
-                div.style.backgroundColor = inv.dueAmount > 0 ? '#d4edda' : '#f0f0f0'; // green or subtle grey
-                div.style.color = inv.dueAmount > 0 ? '#155724' : '#555';
-            } else if (inv.transactionType === 'BUY') {
-                div.style.backgroundColor = inv.dueAmount > 0 ? '#f8d7da' : '#f0f0f0'; // red or subtle grey
-                div.style.color = inv.dueAmount > 0 ? '#721c24' : '#555';
-            } else if (inv.transactionType === 'CASH') {
-                div.style.backgroundColor = '#d1ecf1'; // light blue
-                div.style.color = '#0c5460'; // darker blue
-            } else {
-                div.style.backgroundColor = '#f0f0f0';
-                div.style.color = '#555';
-            }
-
-            // Display invoice info including due amount
-            div.innerHTML = `
-                Invoice #${inv.invoiceId} · Date: ${inv.date} 
-                 ${inv.totalCost > 0 ? `· Total: ₹${inv.totalCost}` : ''}
-                ${inv.dueAmount > 0 ? `· Due: ₹${inv.dueAmount}` : ''}
-                ${inv.paidAmount > 0 ? `Paid: ₹${inv.paidAmount}` : ''}
-            `;
-
-            div.onclick = () => viewInvoicePage(inv.invoiceId);
-            div.style.padding = '8px';
-            div.style.marginBottom = '5px';
-            div.style.borderRadius = '5px';
-            div.style.cursor = 'pointer';
-
-            listDiv.appendChild(div);
-        });
+        listDiv.innerHTML = renderLedger(invoices);
+        document.getElementById('exportLedgerBtn').style.display = 'inline-block';
+        window.currentLedgerInvoices = invoices; // Save for export
     } catch (err) {
         listDiv.textContent = 'Error loading invoices: ' + err.message;
     }
 }
 
     function backToParties() {
-      document.getElementById('invoicesContainer').style.display = 'none';
+     localStorage.removeItem('selectedPartyName'); // <-- Add this line
+     document.getElementById('invoicesContainer').style.display = 'none';
+      document.getElementById('exportLedgerBtn').style.display = 'none';
       document.getElementById('partiesTable').style.display = 'table';
     }
 
@@ -527,7 +694,14 @@ let partyList = [];
       window.location.href = `/viewSingleInvoice.html?id=${invoiceId}`;
     }
 
-    loadParties();
+    
+window.addEventListener('DOMContentLoaded', async () => {
+    await loadParties();
+    const persisted = localStorage.getItem('selectedPartyName');
+    if (persisted) {
+        viewInvoices(persisted);
+    }
+});
     function goHome() {
     window.location.href = '/index.html';
     }
