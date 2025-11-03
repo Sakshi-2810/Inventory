@@ -316,12 +316,25 @@ document.getElementById('btnExportExcel').addEventListener('click', async functi
 
     const table = document.getElementById('stockTable');
     const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim()).slice(0, -1);
-    const rows = Array.from(table.querySelectorAll('tbody tr')).map(row =>
-      Array.from(row.querySelectorAll('td')).slice(0, -1).map(cell => {
+   // Add "Total" as last header
+    headers.push('Total');
+    const rows = Array.from(table.querySelectorAll('tbody tr')).map(row => {
+      const cells = Array.from(row.querySelectorAll('td')).slice(0, -1);
+      const rowData = cells.map(cell => {
         const input = cell.querySelector('input');
-        return input ? input.value : cell.innerText;
-      })
-    );
+        return input ? input.value : cell.innerText.trim();
+      });
+
+    const quantity = parseFloat(rowData[2].replace(/,/g, '')) || 0; // 3rd column: Quantity
+    const price = parseFloat(rowData[4].replace(/,/g, '')) || 0;    // 5th column: Price
+    const gstPercent = parseFloat(rowData[5].replace(/,/g, '')) || 0; // 6th column: GST %
+
+    const totalWithoutGST = quantity * price;
+    const totalWithGST = Math.round(totalWithoutGST * (1 + gstPercent / 100));
+
+      rowData.push(totalWithGST); 
+      return rowData;
+    });
 
     // Create workbook
     const workbook = new ExcelJS.Workbook();

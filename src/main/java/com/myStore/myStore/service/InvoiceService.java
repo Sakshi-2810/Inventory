@@ -9,6 +9,7 @@ import com.myStore.myStore.model.StockBill;
 import com.myStore.myStore.repository.InvoiceRepository;
 import com.myStore.myStore.repository.PartyRepository;
 import com.myStore.myStore.utils.DateUtils;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
@@ -19,12 +20,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
-import org.xhtmlrenderer.pdf.ITextRenderer;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -43,13 +49,35 @@ public class InvoiceService {
     @Autowired
     private SpringTemplateEngine templateEngine;
 
-    private static void renderPdf(String htmlContent, OutputStream os) {
+    private static void renderPdf(String htmlContent, OutputStream os) throws IOException, URISyntaxException {
         String xhtml = Jsoup.parse(htmlContent, "UTF-8").outputSettings(new Document.OutputSettings().syntax(Document.OutputSettings.Syntax.xml)).outerHtml();
+        File fontFile = getFontFile("/fonts/NotoSerifDevanagari-Regular.ttf");
+        PdfRendererBuilder builder = new PdfRendererBuilder();
+        builder.useFastMode(); // PDFBox recommended
+        builder.withHtmlContent(xhtml, null);
+        builder.useFont(fontFile, "Noto Serif Devanagari");
+        builder.defaultTextDirection(PdfRendererBuilder.TextDirection.LTR);
+        builder.toStream(os);
+        builder.run();
 
-        ITextRenderer renderer = new ITextRenderer();
-        renderer.setDocumentFromString(xhtml);
-        renderer.layout();
-        renderer.createPDF(os);
+    }
+    private static File getFontFile(String resourcePath) throws IOException {
+        try (InputStream is = InvoiceService.class.getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                throw new FileNotFoundException("Font not found in resources: " + resourcePath);
+            }
+
+            File temp = File.createTempFile("font", ".ttf");
+            temp.deleteOnExit();
+            try (FileOutputStream fos = new FileOutputStream(temp)) {
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = is.read(buffer)) > 0) {
+                    fos.write(buffer, 0, len);
+                }
+            }
+            return temp;
+        }
     }
 
     public Integer generateNewInvoiceId() {
@@ -147,6 +175,8 @@ public class InvoiceService {
             renderPdf(htmlContent, os);
             os.flush();
             log.info("✅ PDF generated and sent for invoice ID: {}", invoiceId);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 

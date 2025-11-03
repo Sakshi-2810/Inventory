@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
@@ -56,9 +57,10 @@ public class StockDetailService {
 
     public void saveStocks(List<StockBill> stockBills) {
         List<String> existingStocks = stockDetailRepository.findItemNameByItemNameIn(stockBills.stream().map(StockBill::getItemName).toList()).stream().map(StockDetail::getItemName).toList();
+        AtomicInteger id = new AtomicInteger(generateNewStockDetailId());
         List<StockDetail> newStocks = stockBills.stream().filter(stockBill -> !existingStocks.contains(stockBill.getItemName())).map(stockBill -> {
             StockDetail stockDetail = new StockDetail();
-            stockDetail.setItemId(generateNewStockDetailId());
+            stockDetail.setItemId(id.getAndIncrement());
             stockDetail.setItemName(stockBill.getItemName());
             stockDetail.setPrice(stockBill.getPrice());
             stockDetail.setGst(stockBill.getGst());
