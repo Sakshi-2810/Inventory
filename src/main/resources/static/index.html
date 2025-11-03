@@ -119,6 +119,7 @@
       window.location.href = 'invoice.html';
     });
     document.getElementById('btnViewParty').addEventListener('click', () => {
+     localStorage.removeItem('selectedPartyName');
       window.location.href = 'viewParties.html';
     });
     document.getElementById('btnViewInvoices').addEventListener('click', () => {
