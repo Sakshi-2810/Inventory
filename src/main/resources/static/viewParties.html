@@ -634,9 +634,9 @@ function renderLedger(invoices) {
                 <td>${inv.date}</td>
                 <td>${inv.invoiceId}</td>
                 <td>${inv.transactionType}</td>
-                <td class="debit">${inv._debit}</td>
-                <td class="credit">${inv._credit}</td>
-                <td class="balance">${inv._balance}</td>
+                <td class="debit">${inv._debit.toLocaleString('en-IN')}</td>
+                <td class="credit">${inv._credit.toLocaleString('en-IN')}</td>
+                <td class="balance">${inv._balance.toLocaleString('en-IN')}</td>
             </tr>
         `;
     });

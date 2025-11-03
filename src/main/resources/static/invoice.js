@@ -9,7 +9,7 @@ function createRow(stock = {}) {
         <td><input type="text" class="unitInput" style="width:80px;" value="${stock.unit || ''}"></td>
         <td><input type="number" min="0" step="1" class="priceInput" style="width:80px;" value="${stock.price || ''}"></td>
         <td><input type="number" min="0" step="1" class="gstInput" style="width:60px;" value="${stock.gst || ''}"></td>
-        <td><input type="number" class="totalInput" style="width:100px;" readonly></td>
+        <td><input type="text" class="totalInput" style="width:100px;" readonly></td>
         <td><button type="button" class="removeBtn" title="Remove row">✕</button></td>
           `;
       const qtyInput = row.querySelector('.qtyInput');
@@ -23,7 +23,7 @@ function createRow(stock = {}) {
           const qty = parseFloat(qtyInput.value) || 0;
           const gst = parseFloat(gstInput.value) || 0;
           const total = qty * price * (1 + gst / 100);
-          totalInput.value = Math.round(total);
+          totalInput.value = Math.round(total).toLocaleString('en-IN');
           // calculateCost();
         }
         stockInput.addEventListener('change', function () {
@@ -126,8 +126,8 @@ async function calculateCost() {
     });
     if (!res.ok) throw new Error('Failed to calculate cost');
     const data = await res.json();
-    document.getElementById('totalCost').value = data.data.Cost;
-    document.getElementById('gst').value = data.data.Tax;
+    document.getElementById('totalCost').value = data.data.Cost.toLocaleString('en-IN');
+    document.getElementById('gst').value = data.data.Tax.toLocaleString('en-IN');
   } catch (err) {
     showNotification('Error: ' + err.message, 'error');
   } finally{

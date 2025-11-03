@@ -154,9 +154,9 @@ function goHome() { window.location.href='/index.html'; }
           <td>${inv.invoiceId}</td>
           <td>${inv.partyName || "-"}</td>
           <td>${inv.date || "-"}</td>
-          <td>₹${inv.totalCost || 0}</td>
+          <td>₹${inv.totalCost.toLocaleString('en-IN') || 0}</td>
           <td>${inv.transactionType}</td>
-          <td>${inv.paidAmount}</td>
+          <td>${inv.paidAmount.toLocaleString('en-IN')}</td>
           <td><button class="btn btn-view" onclick="viewInvoice(${inv.invoiceId})">View</button></td>
         `;
         tbody.appendChild(tr);

@@ -430,8 +430,8 @@ let currentBtn = null;
         document.getElementById('invoiceDate').value  = toInputDateFormat(invoiceData.date ? `${invoiceData.date}` : '');
         invoiceFields.partyName.value = invoiceData.partyName;
         invoiceFields.transactionType.value = invoiceData.transactionType;
-        invoiceFields.totalCost.value = invoiceData.totalCost || 0;
-        invoiceFields.gst.value = invoiceData.tax || 0;
+        invoiceFields.totalCost.value = invoiceData.totalCost.toLocaleString('en-IN') || 0;
+        invoiceFields.gst.value = invoiceData.tax.toLocaleString('en-IN') || 0;
         invoiceFields.additionalDiscount.value = invoiceData.additionalDiscount || 0;
         invoiceFields.paidAmount.value = invoiceData.paidAmount || 0;
 
