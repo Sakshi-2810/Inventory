@@ -23,7 +23,9 @@ public class PlaywrightPdfGenerator {
                             .setHeadless(true)
                             .setArgs(java.util.List.of(
                                     "--no-sandbox",
-                                    "--disable-dev-shm-usage"
+                                    "--disable-dev-shm-usage",
+                                    "--single-process",
+                                    "--no-zygote"
                             ))
             );
         }
