@@ -11,43 +11,44 @@ public class PlaywrightPdfGenerator {
 
     private Playwright playwright;
     private Browser browser;
-
+    private BrowserContext context;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    private void init() {
-        if (initialized.compareAndSet(false, true)) {
+    private synchronized void init() {
+        if (!initialized.get()) {
             playwright = Playwright.create();
-
-            browser = playwright.chromium().launch(
-                    new BrowserType.LaunchOptions()
-                            .setHeadless(true)
-                            .setArgs(java.util.List.of(
-                                    "--no-sandbox",
-                                    "--disable-dev-shm-usage",
-                                    "--single-process",
-                                    "--no-zygote"
-                            ))
+            browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(true)
+                    .setArgs(java.util.List.of(
+                            "--no-sandbox",
+                            "--disable-dev-shm-usage"
+                    ))
             );
+            // Reuse a single BrowserContext to reduce overhead
+            context = browser.newContext();
+            initialized.set(true);
         }
     }
 
     public byte[] generatePdf(String html) {
-        init(); // lazy initialize Playwright & Browser only when first PDF is requested
+        init();
 
-        Page page = browser.newPage();
-        page.setContent(html);
-
-        byte[] pdf = page.pdf(new Page.PdfOptions()
-                .setFormat("A4")
-                .setPrintBackground(true)
-        );
-
-        page.close();
-        return pdf;
+        // Create a new page inside the single context (fast)
+        Page page = context.newPage();
+        try {
+            page.setContent(html);
+            return page.pdf(new Page.PdfOptions()
+                    .setFormat("A4")
+                    .setPrintBackground(true)
+            );
+        } finally {
+            page.close(); // Only close the page, not the context
+        }
     }
 
     @PreDestroy
     public void close() {
+        if (context != null) context.close();
         if (browser != null) browser.close();
         if (playwright != null) playwright.close();
     }
