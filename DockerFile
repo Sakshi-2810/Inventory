@@ -13,25 +13,22 @@ FROM eclipse-temurin:17-jdk AS runtime
 
 WORKDIR /app
 
-# Install system packages required by Chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget gnupg ca-certificates \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxdamage1 \
     libxrandr2 libxkbcommon0 libxcomposite1 libxfixes3 libxrender1 \
-    libxext6 libxshmfence1 libglib2.0-0 libdrm2 libgbm1 libasound2 \
+    libxext6 libxshmfence1 libglib2.0-0 libdrm2 libgbm1 libasound2t0 \
     fonts-liberation libcurl4 openssh-client git \
-    libgtk-3-0 libx11-xcb1 libxtst6 libpci3 \
+    libgtk-3-0 libx11-xcb1 libxtst6 libpciaccess0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node + Playwright
-RUN wget -qO- https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    npm i -g playwright && \
-    playwright install chromium && \
-    playwright install-deps && \
-    rm -rf /var/lib/apt/lists/*
+RUN wget -qO- https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g playwright \
+    && playwright install chromium \
+    && playwright install-deps \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy JAR
 COPY --from=build /app/target/*.jar app.jar
 
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
