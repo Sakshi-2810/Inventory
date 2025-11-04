@@ -1,6 +1,7 @@
 package com.myStore.myStore.utils;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.WaitUntilState;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
@@ -46,7 +47,7 @@ public class PlaywrightPdfGenerator {
         init();
 
         try (Page page = context.newPage()) {
-            page.setContent(html);
+            page.setContent(html, new Page.SetContentOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
             return page.pdf(new Page.PdfOptions()
                     .setFormat("A4")
                     .setPrintBackground(true)
