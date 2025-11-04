@@ -19,12 +19,13 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         openjdk-17-jdk-headless \
-        fonts-noto \
-        fonts-noto-serif \
+        fonts-noto-core \
+        fonts-noto-extra \
+        fonts-noto-unhinted \
         fonts-noto-cjk \
         fonts-noto-color-emoji \
-        locales \
-    && rm -rf /var/lib/apt/lists/*
+        locales && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set locale for Hindi
 RUN locale-gen hi_IN.UTF-8
