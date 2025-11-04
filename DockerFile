@@ -6,27 +6,19 @@ COPY pom.xml .
 RUN mvn dependency:go-offline
 
 COPY src ./src
-RUN mvn clean package -DskipTests -T 1C
+RUN mvn clean package -DskipTests
 
 # ---------- STAGE 2: Runtime ----------
-FROM eclipse-temurin:17-jdk AS runtime
+# Use Playwright official image with all dependencies
+FROM mcr.microsoft.com/playwright:focal AS runtime
 WORKDIR /app
 
-# Install minimal dependencies for Playwright Chromium
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 \
-    libatspi2.0-0 libxfixes3 libpango-1.0-0 libcairo2 libasound2 \
-    fonts-liberation libnss3 libx11-xcb1 libxcomposite1 libxdamage1 \
-    libxrandr2 libxext6 libxrender1 libgbm1 libglib2.0-0 libdrm2 \
-    curl git \
+# Install OpenJDK 17 if not included
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jdk-headless \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js + Playwright
-RUN wget -qO- https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g playwright-chromium \
-    && rm -rf /var/lib/apt/lists/*
 # Copy Spring Boot jar
 COPY --from=build /app/target/*.jar app.jar
 
+# Run the app
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
