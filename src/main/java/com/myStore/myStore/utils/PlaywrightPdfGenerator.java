@@ -1,6 +1,7 @@
 package com.myStore.myStore.utils;
 
 import com.microsoft.playwright.*;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ public class PlaywrightPdfGenerator {
     private BrowserContext context;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
+    @PostConstruct
     private synchronized void init() {
         if (!initialized.get()) {
             playwright = Playwright.create();
@@ -24,8 +26,18 @@ public class PlaywrightPdfGenerator {
                             "--disable-dev-shm-usage"
                     ))
             );
-            // Reuse a single BrowserContext to reduce overhead
+
+            // Reuse a single context for speed
             context = browser.newContext();
+
+            // Optional warm-up to reduce first PDF latency
+            try (Page page = context.newPage()) {
+                page.setContent("<html><body></body></html>");
+                page.pdf(); // generate a dummy PDF
+            } catch (Exception e) {
+                // ignore warm-up errors
+            }
+
             initialized.set(true);
         }
     }
@@ -33,16 +45,12 @@ public class PlaywrightPdfGenerator {
     public byte[] generatePdf(String html) {
         init();
 
-        // Create a new page inside the single context (fast)
-        Page page = context.newPage();
-        try {
+        try (Page page = context.newPage()) {
             page.setContent(html);
             return page.pdf(new Page.PdfOptions()
                     .setFormat("A4")
                     .setPrintBackground(true)
             );
-        } finally {
-            page.close(); // Only close the page, not the context
         }
     }
 
