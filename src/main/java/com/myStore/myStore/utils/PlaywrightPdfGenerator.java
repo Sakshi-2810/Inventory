@@ -1,32 +1,52 @@
 package com.myStore.myStore.utils;
 
 import com.microsoft.playwright.*;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class PlaywrightPdfGenerator {
 
-    private final Playwright playwright;
-    private final Browser browser;
+    private Playwright playwright;
+    private Browser browser;
 
-    public PlaywrightPdfGenerator() {
-        this.playwright = Playwright.create();
-        this.browser = playwright.chromium()
-                .launch(new BrowserType.LaunchOptions().setHeadless(true));
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
+
+    private void init() {
+        if (initialized.compareAndSet(false, true)) {
+            playwright = Playwright.create();
+
+            browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions()
+                            .setHeadless(true)
+                            .setArgs(java.util.List.of(
+                                    "--no-sandbox",
+                                    "--disable-dev-shm-usage"
+                            ))
+            );
+        }
     }
 
     public byte[] generatePdf(String html) {
+        init(); // lazy initialize Playwright & Browser only when first PDF is requested
+
         Page page = browser.newPage();
         page.setContent(html);
 
-        byte[] pdfBytes = page.pdf(
-                new Page.PdfOptions()
-                        .setFormat("A4")
-                        .setPrintBackground(true)
+        byte[] pdf = page.pdf(new Page.PdfOptions()
+                .setFormat("A4")
+                .setPrintBackground(true)
         );
 
         page.close();
-        return pdfBytes;
+        return pdf;
+    }
+
+    @PreDestroy
+    public void close() {
+        if (browser != null) browser.close();
+        if (playwright != null) playwright.close();
     }
 }
-
