@@ -10,6 +10,7 @@ import com.myStore.myStore.repository.InvoiceRepository;
 import com.myStore.myStore.repository.PartyRepository;
 import com.myStore.myStore.utils.DateUtils;
 import com.myStore.myStore.utils.PlaywrightPdfGenerator;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -179,6 +180,7 @@ public class InvoiceService {
         return new Response(invoiceRepository.findAll(), "All invoices fetched successfully");
     }
 
+    @PostConstruct
     public void warmUp() {
         try {
             log.info("🚀 Warmup: preloading invoice PDF engine...");

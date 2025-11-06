@@ -1,6 +1,7 @@
 package com.myStore.myStore.utils;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.Margin;
 import com.microsoft.playwright.options.WaitUntilState;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -51,6 +52,7 @@ public class PlaywrightPdfGenerator {
             return page.pdf(new Page.PdfOptions()
                     .setFormat("A4")
                     .setPrintBackground(true)
+                    .setMargin(new Margin().setTop("20mm").setBottom("20mm").setLeft("15mm").setRight("15mm"))
             );
         }
     }
