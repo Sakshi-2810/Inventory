@@ -1,6 +1,7 @@
 package com.myStore.myStore.service;
 
 import com.myStore.myStore.dto.InvoiceDto;
+import com.myStore.myStore.dto.PartyDto;
 import com.myStore.myStore.exception.CustomDataException;
 import com.myStore.myStore.model.Invoice;
 import com.myStore.myStore.model.Party;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -201,4 +203,16 @@ public class InvoiceService {
         }
     }
 
+
+    public Response getDashboardData(String fromDate, String toDate) {
+        List<Invoice> invoices = invoiceRepository.findByDateBetween(fromDate, toDate);
+        log.info("Fetched {} invoices for dashboard from {} to {}", invoices.size(), fromDate, toDate);
+        List<PartyDto> topParties = invoices.stream().collect(Collectors.groupingBy(Invoice::getPartyName, Collectors.summingInt(Invoice::getTotalCost))).entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).map(entry -> {
+            PartyDto party = new PartyDto();
+            party.setName(entry.getKey());
+            party.setTotalCost(entry.getValue());
+            return party;
+        }).toList();
+        return new Response(Map.of("invoice", invoices, "party", topParties), "Dashboard data fetched successfully");
+    }
 }

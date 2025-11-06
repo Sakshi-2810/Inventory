@@ -7,6 +7,7 @@ import com.myStore.myStore.model.StockBill;
 import com.myStore.myStore.service.InvoiceService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -61,5 +62,10 @@ public class InvoiceController {
     @DeleteMapping(produces = "application/json", value = "/invoice/delete" )
     public ResponseEntity<Response> deleteInvoice(@RequestParam Integer invoiceId) {
         return ResponseEntity.ok(invoiceService.deleteInvoice(invoiceId));
+    }
+
+    @GetMapping(produces = "application/json", value = "/dashboard" )
+    public ResponseEntity<Response> getDashboardData(@RequestParam @NotBlank String fromDate, @RequestParam @NotBlank String toDate) {
+        return ResponseEntity.ok(invoiceService.getDashboardData(fromDate, toDate));
     }
 }

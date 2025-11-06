@@ -10,10 +10,17 @@ RUN mvn dependency:go-offline
 COPY src ./src
 RUN mvn clean package -DskipTests
 
+
 # ---------- STAGE 2: Runtime ----------
 # Use Playwright official image (Ubuntu Focal) with all dependencies
 FROM mcr.microsoft.com/playwright:focal AS runtime
 WORKDIR /app
+
+# 🔹 Prevent Playwright from deleting browsers
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# 🔹 Preinstall browsers once during image build (they’ll stay cached)
+RUN npx playwright install --with-deps chromium
 
 # Install OpenJDK 17 + Fonts for Hindi/Devanagari + clean up
 RUN apt-get update && \
@@ -35,6 +42,9 @@ ENV LC_ALL=hi_IN.UTF-8
 
 # Copy Spring Boot jar from build stage
 COPY --from=build /app/target/*.jar app.jar
+
+# 🔹 (Optional but recommended) — mark browsers folder as a Docker volume
+VOLUME ["/ms-playwright"]
 
 # Run the Spring Boot application
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]

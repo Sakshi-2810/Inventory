@@ -17,4 +17,5 @@ public class PartyDto {
     private String gstin;
     private Integer totalDue;
     private List<InvoiceDto> invoices;
+    private Integer totalCost;
 }
